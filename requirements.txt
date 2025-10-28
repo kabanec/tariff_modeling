@@ -7,3 +7,4 @@ werkzeug
 Flask-CORS
 gunicorn
 logging
+app

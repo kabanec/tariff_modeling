@@ -1,30 +1,47 @@
-from flask import Flask, request, jsonify, render_template, Response
+from flask import Flask, request, jsonify, render_template, Response, send_file
 from flask_cors import CORS
 import random
-import requests
 import os
 from dotenv import load_dotenv
-import logging
+from functools import wraps
+import requests
+from datetime import datetime
+import re
 import uuid
+import logging
+import traceback
+import base64
+from io import BytesIO
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
+API_BASE_URL = os.getenv("API_URL", "https://info.dev.3ceonline.com/ccce/apis")
+API_TOKEN = os.getenv("API_TOKEN", "your_token_here")
 VALID_USER = os.getenv("AUTH_USER", "admin")
 VALID_PASS = os.getenv("AUTH_PASS", "password")
 
-def auth_required():
-    request_id = str(uuid.uuid4())
-    auth = request.authorization
-    logger.debug(f"[{request_id}] Authorization header: {auth}")
-    if not auth:
-        logger.error(f"[{request_id}] No authorization header provided")
-        return Response('Unauthorized', 401, {'WWW-Authenticate': 'Basic realm="Login Required"'})
-    if auth.username != VALID_USER or auth.password != VALID_PASS:
-        logger.error(f"[{request_id}] Invalid credentials: username={auth.username}, expected={VALID_USER}")
-        return Response('Unauthorized', 401, {'WWW-Authenticate': 'Basic realm="Login Required"'})
-    logger.debug(f"[{request_id}] Authentication successful")
-    return None
+
+def auth_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        request_id = str(uuid.uuid4())
+        auth = request.authorization
+        logger.debug(f"[{request_id}] Authorization header: {auth}")
+        if not auth:
+            logger.error(f"[{request_id}] No authorization header provided")
+            return Response('Unauthorized', 401, {'WWW-Authenticate': 'Basic realm="Login Required"'})
+        if auth.username != VALID_USER or auth.password != VALID_PASS:
+            logger.error(f"[{request_id}] Invalid credentials: username={auth.username}, expected={VALID_USER}")
+            return Response('Unauthorized', 401, {'WWW-Authenticate': 'Basic realm="Login Required"'})
+        logger.debug(f"[{request_id}] Authentication successful")
+        return f(*args, **kwargs)
+
+    return decorated
+
 
 load_dotenv()
 
@@ -59,7 +76,7 @@ def get_avalara_auth_header():
 
 
 def call_global_compliance_api(hs_code, coo, vendor_country, cost_per_unit, quantity, description, import_country,
-                               spi_applicable):
+                               spi_applicable, import_date):
     """
     Call Avalara Global Compliance API for real duty calculations
 
@@ -72,6 +89,7 @@ def call_global_compliance_api(hs_code, coo, vendor_country, cost_per_unit, quan
         description: Product description
         import_country: Import destination country (default US)
         spi_applicable: Whether SPI is applicable (True/False)
+        import_date: Import date in YYYY-MM-DD format
 
     Returns:
         Dictionary with API response and parsed duty data
@@ -88,6 +106,7 @@ def call_global_compliance_api(hs_code, coo, vendor_country, cost_per_unit, quan
         payload = {
             "id": "TARIFF-MODEL-001",
             "companyId": int(AVALARA_COMPANY_ID),
+            "transactionDate": import_date,
             "currency": "usd",
             "sellerCode": "SELLER-001",
             "b2b": True,
@@ -309,12 +328,9 @@ def calculate_tariff(hs_code, coo, vendor_country, cost_per_unit, quantity, calc
 
 
 @app.route('/')
+@auth_required
 def index():
     """Serve the main application page"""
-    auth_error = auth_required()
-    if auth_error:
-        return auth_error
-    auth = request.authorization
 
     countries = [{'code': c, 'name': c, 'flag': '🌍'} for c in COUNTRIES]
     incoterms = ['FCA', 'FOB', 'CIF', 'DDP']
@@ -323,8 +339,8 @@ def index():
                            form_data={})
 
 
-
 @app.route('/classify_hs', methods=['POST'])
+@auth_required
 def classify_hs():
     """Classify HS Code based on product description"""
     data = request.json
@@ -348,6 +364,7 @@ def classify_hs():
 
 
 @app.route('/calculate_vendor', methods=['POST'])
+@auth_required
 def calculate_vendor():
     """Calculate tariff for a single vendor using Avalara Global Compliance API"""
     data = request.json
@@ -359,6 +376,7 @@ def calculate_vendor():
     cost = float(data.get('cost', 0))
     quantity = int(data.get('quantity', 1))
     import_country = data.get('import_country', 'US')
+    import_date = data.get('import_date', datetime.now().strftime('%Y-%m-%d'))
     spi_applicable = data.get('spi_applicable', False)
 
     # Call Avalara Global Compliance API
@@ -370,7 +388,8 @@ def calculate_vendor():
         quantity=quantity,
         description=description,
         import_country=import_country,
-        spi_applicable=spi_applicable
+        spi_applicable=spi_applicable,
+        import_date=import_date
     )
 
     if result['success']:
@@ -394,19 +413,244 @@ def calculate_vendor():
         }), 500
 
 
+@app.route('/export_excel', methods=['POST'])
+@auth_required
+def export_excel():
+    """Export calculation results to Excel"""
+    try:
+        data = request.json
+        form_data = data.get('formData', {})
+        vendors = data.get('vendors', [])
+
+        if not vendors:
+            return jsonify({'error': 'No vendor data to export'}), 400
+
+        # Create workbook
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "Tariff Calculations"
+
+        # Define styles
+        header_fill = PatternFill(start_color="FF6600", end_color="FF6600", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF", size=12)
+        subheader_fill = PatternFill(start_color="FFF9E6", end_color="FFF9E6", fill_type="solid")
+        subheader_font = Font(bold=True, size=11)
+        total_fill = PatternFill(start_color="FFE6CC", end_color="FFE6CC", fill_type="solid")
+        total_font = Font(bold=True, size=11)
+        border = Border(
+            left=Side(style='thin'),
+            right=Side(style='thin'),
+            top=Side(style='thin'),
+            bottom=Side(style='thin')
+        )
+        center_align = Alignment(horizontal='center', vertical='center', wrap_text=True)
+        left_align = Alignment(horizontal='left', vertical='center', wrap_text=True)
+
+        # Title
+        ws.merge_cells('A1:F1')
+        ws['A1'] = 'Avalara Tariff Modeling - Calculation Results'
+        ws['A1'].font = Font(bold=True, size=16, color="FF6600")
+        ws['A1'].alignment = center_align
+
+        # Product Information Section
+        row = 3
+        ws.merge_cells(f'A{row}:F{row}')
+        ws[f'A{row}'] = 'Product & Import Details'
+        ws[f'A{row}'].fill = header_fill
+        ws[f'A{row}'].font = header_font
+        ws[f'A{row}'].alignment = left_align
+
+        row += 1
+        product_info = [
+            ('Ship Date:', form_data.get('import_date', 'N/A')),
+            ('Destination:', form_data.get('import_country', 'N/A')),
+            ('Part #/SKU:', form_data.get('part_sku', 'N/A')),
+            ('Product Description:', form_data.get('description', 'N/A')),
+            ('Tariff Code (HS Code):', form_data.get('hs_code', 'N/A')),
+            ('Order Quantity:', form_data.get('order_qty', 'N/A')),
+            ('SPI Applicable:', 'Yes' if form_data.get('spi_applicable') else 'No')
+        ]
+
+        for label, value in product_info:
+            ws[f'A{row}'] = label
+            ws[f'A{row}'].font = Font(bold=True)
+            ws[f'B{row}'] = value
+            ws.merge_cells(f'B{row}:F{row}')
+            row += 1
+
+        # Vendor Comparison Section
+        row += 2
+        ws.merge_cells(f'A{row}:F{row}')
+        ws[f'A{row}'] = 'Vendor Comparison'
+        ws[f'A{row}'].fill = header_fill
+        ws[f'A{row}'].font = header_font
+        ws[f'A{row}'].alignment = left_align
+
+        # Get all unique duty types across all vendors
+        all_duty_types = set()
+        for vendor in vendors:
+            for duty_line in vendor.get('duty_lines', []):
+                all_duty_types.add(duty_line['description'])
+        all_duty_types = sorted(list(all_duty_types))
+
+        # Vendor table headers
+        row += 1
+        headers_start_row = row
+        headers = ['Metric'] + [v.get('name', f"Vendor {i + 1}") for i, v in enumerate(vendors)]
+
+        for col_idx, header in enumerate(headers, start=1):
+            cell = ws.cell(row=row, column=col_idx)
+            cell.value = header
+            cell.fill = subheader_fill
+            cell.font = subheader_font
+            cell.alignment = center_align
+            cell.border = border
+
+        # Vendor basic info
+        row += 1
+        vendor_info_rows = [
+            ('Vendor Country', lambda v: v.get('vendor_country', 'N/A')),
+            ('Country of Origin', lambda v: v.get('coo', 'N/A')),
+            ('COGS per Unit', lambda v: f"${v.get('cost', 0):.2f}"),
+            ('Quantity', lambda v: str(v.get('quantity', 0)))
+        ]
+
+        for label, value_func in vendor_info_rows:
+            ws.cell(row=row, column=1).value = label
+            ws.cell(row=row, column=1).font = Font(bold=True)
+            ws.cell(row=row, column=1).alignment = left_align
+            ws.cell(row=row, column=1).border = border
+
+            for col_idx, vendor in enumerate(vendors, start=2):
+                cell = ws.cell(row=row, column=col_idx)
+                cell.value = value_func(vendor)
+                cell.alignment = center_align
+                cell.border = border
+            row += 1
+
+        # Duty breakdown section header
+        ws.cell(row=row, column=1).value = 'Duty Breakdown'
+        ws.cell(row=row, column=1).font = subheader_font
+        ws.cell(row=row, column=1).fill = PatternFill(start_color="E6F3FF", end_color="E6F3FF", fill_type="solid")
+        ws.cell(row=row, column=1).border = border
+        for col_idx in range(2, len(vendors) + 2):
+            ws.cell(row=row, column=col_idx).fill = PatternFill(start_color="E6F3FF", end_color="E6F3FF",
+                                                                fill_type="solid")
+            ws.cell(row=row, column=col_idx).border = border
+        row += 1
+
+        # Individual duty lines
+        for duty_type in all_duty_types:
+            ws.cell(row=row, column=1).value = duty_type
+            ws.cell(row=row, column=1).alignment = left_align
+            ws.cell(row=row, column=1).border = border
+
+            for col_idx, vendor in enumerate(vendors, start=2):
+                # Find matching duty line
+                duty_value = 'N/A'
+                for duty_line in vendor.get('duty_lines', []):
+                    if duty_line['description'] == duty_type:
+                        duty_value = f"{duty_line['rate_percent']:.2f}%"
+                        break
+
+                cell = ws.cell(row=row, column=col_idx)
+                cell.value = duty_value
+                cell.alignment = center_align
+                cell.border = border
+            row += 1
+
+        # Total Duty Rate
+        ws.cell(row=row, column=1).value = 'Total Duty Rate'
+        ws.cell(row=row, column=1).font = total_font
+        ws.cell(row=row, column=1).fill = total_fill
+        ws.cell(row=row, column=1).alignment = left_align
+        ws.cell(row=row, column=1).border = border
+
+        for col_idx, vendor in enumerate(vendors, start=2):
+            cell = ws.cell(row=row, column=col_idx)
+            cell.value = vendor.get('total_duty_rate', 'N/A')
+            cell.font = total_font
+            cell.fill = total_fill
+            cell.alignment = center_align
+            cell.border = border
+        row += 1
+
+        # Total Duty Amount
+        ws.cell(row=row, column=1).value = 'Total Duty Amount'
+        ws.cell(row=row, column=1).font = total_font
+        ws.cell(row=row, column=1).fill = total_fill
+        ws.cell(row=row, column=1).alignment = left_align
+        ws.cell(row=row, column=1).border = border
+
+        for col_idx, vendor in enumerate(vendors, start=2):
+            cell = ws.cell(row=row, column=col_idx)
+            cell.value = f"${vendor.get('total_duty_amount', 0):.2f}"
+            cell.font = total_font
+            cell.fill = total_fill
+            cell.alignment = center_align
+            cell.border = border
+        row += 1
+
+        # Total Landed Cost
+        ws.cell(row=row, column=1).value = 'Total Landed Cost'
+        ws.cell(row=row, column=1).font = Font(bold=True, size=12, color="FF6600")
+        ws.cell(row=row, column=1).fill = PatternFill(start_color="FFE0B2", end_color="FFE0B2", fill_type="solid")
+        ws.cell(row=row, column=1).alignment = left_align
+        ws.cell(row=row, column=1).border = border
+
+        for col_idx, vendor in enumerate(vendors, start=2):
+            cell = ws.cell(row=row, column=col_idx)
+            merchandise_value = vendor.get('cost', 0) * vendor.get('quantity', 0)
+            total_landed = merchandise_value + vendor.get('total_duty_amount', 0)
+            cell.value = f"${total_landed:.2f}"
+            cell.font = Font(bold=True, size=12, color="FF6600")
+            cell.fill = PatternFill(start_color="FFE0B2", end_color="FFE0B2", fill_type="solid")
+            cell.alignment = center_align
+            cell.border = border
+
+        # Adjust column widths
+        ws.column_dimensions['A'].width = 35
+        for col_idx in range(2, len(vendors) + 2):
+            ws.column_dimensions[get_column_letter(col_idx)].width = 18
+
+        # Save to BytesIO
+        excel_file = BytesIO()
+        wb.save(excel_file)
+        excel_file.seek(0)
+
+        # Generate filename with timestamp
+        timestamp = datetime.now().strftime('%Y-%m-%d_%H%M%S')
+        filename = f'Tariff_Calculations_{timestamp}.xlsx'
+
+        return send_file(
+            excel_file,
+            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            as_attachment=True,
+            download_name=filename
+        )
+
+    except Exception as e:
+        logger.error(f"Excel export error: {str(e)}")
+        logger.error(traceback.format_exc())
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/countries', methods=['GET'])
+@auth_required
 def get_countries():
     """Return list of country codes"""
     return jsonify({"countries": COUNTRIES})
 
 
 @app.route('/api/hs-codes', methods=['GET'])
+@auth_required
 def get_hs_codes():
     """Return list of HS codes"""
     return jsonify({"hs_codes": list(HS_CODES.keys())})
 
 
 @app.route('/api/hs-code/<code>', methods=['GET'])
+@auth_required
 def get_hs_code_info(code):
     """Return info for specific HS code"""
     info = HS_CODES.get(code)
@@ -417,6 +661,7 @@ def get_hs_code_info(code):
 
 
 @app.route('/api/calculate', methods=['POST'])
+@auth_required
 def calculate():
     """
     Calculate tariff for a single vendor
@@ -472,9 +717,11 @@ def calculate():
 
 
 @app.route('/api/health', methods=['GET'])
+@auth_required
 def health():
     """Health check endpoint"""
     return jsonify({"status": "ok"})
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
