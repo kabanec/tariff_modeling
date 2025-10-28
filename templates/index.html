@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Avalara Tariff Modeling Tool</title>
+    <style>
+        body {
+            font-family: 'Avenir Next', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #ff6600;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+            font-weight: 600;
+        }
+        .form-section, .results-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .header {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #555;
+            font-size: 0.9em;
+        }
+        input, select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1em;
+            box-sizing: border-box;
+            width: 100%;
+        }
+        .order-details {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .vendors {
+            display: grid;
+            grid-template-columns: minmax(150px, 1fr) repeat(6, 1fr);
+            gap: 1px;
+            margin-top: 20px;
+            background: #ddd;
+            position: relative;
+        }
+        .vendors .label-col {
+            background: #f0f0f0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            border-right: 1px solid #fff;
+            position: sticky;
+            left: 0;
+            z-index: 1;
+        }
+        .vendors .vendor-col {
+            background: #f9f9f9;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            border-right: 1px solid #fff;
+            position: relative;
+        }
+        .vendors .vendor-col:last-child {
+            border-right: none;
+        }
+        .vendors .input-group {
+            flex: 1;
+        }
+        .vendors input, .vendors select {
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .vendors .hidden {
+            display: none;
+        }
+        .vendors .loading {
+            padding: 20px;
+            text-align: center;
+            font-size: 1.2em;
+            color: #007bff;
+            font-weight: bold;
+        }
+        .vendors .error {
+            color: red;
+            font-weight: bold;
+            text-align: center;
+            padding: 10px;
+        }
+        .vendor-results-container {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 100%;
+        }
+        .vendor-results-container .duty-result {
+            background: #f0f8ff;
+            padding: 8px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .vendor-results-container .total-duty-rate,
+        .vendor-results-container .total-duty-amount {
+            background: #e6f3ff;
+            border-top: 2px solid #007bff;
+        }
+        .duty-labels-container {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 100%;
+        }
+        .duty-labels-container .input-group {
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+        }
+        button {
+            background: #ff6600;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-right: 10px;
+        }
+        .run-btn {
+            background: #007bff;
+        }
+        .debug-btn {
+            background: #6c757d;
+        }
+        .debug {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background: #f9f9f9;
+            display: none;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .debug.active {
+            display: block;
+        }
+        pre {
+            white-space: pre-wrap;
+            font-size: 12px;
+        }
+        #hs_code { background-color: #e9ecef; }
+        .error { color: red; margin-top: 10px; }
+        .spi-only { display: none; }
+        .spi-only.active { display: table-cell; }
+        .results-section p {
+            margin: 5px 0;
+            font-size: 1em;
+        }
+        @media (max-width: 1200px) {
+            .vendors {
+                grid-template-columns: minmax(150px, 1fr) repeat(2, 1fr); /* Stack on smaller screens */
+            }
+            .vendors .vendor-col {
+                border-bottom: 1px solid #fff;
+                border-right: none;
+            }
+            .vendors .vendor-col:nth-child(3n) {
+                border-bottom: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Avalara <span style="color: #ff6600;">Tariff Modeling</span></h1>
+
+        <form method="POST" id="mainForm" onsubmit="return validateForm(event)">
+            <div class="form-section">
+                <h2>Product & Import Details</h2>
+                <div class="header">
+                    <div class="input-group">
+                        <label>Import Date</label>
+                        <input type="date" name="import_date" value="{{ form_data.get('import_date', '') }}" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Import Country</label>
+                        <select name="import_country" required>
+                            {% for country in countries %}
+                            <option value="{{ country.code }}" {% if country.code == form_data.get('import_country', 'US') %}selected{% endif %}>{{ country.flag }} {{ country.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Part # / SKU</label>
+                        <input type="text" name="part_sku" value="{{ form_data.get('part_sku', '') }}">
+                    </div>
+                    <div class="input-group">
+                        <label>Product Description</label>
+                        <input type="text" name="description" id="description" value="{{ form_data.get('description', '') }}" required placeholder="Enter description to auto-classify HS">
+                    </div>
+                    <div class="input-group">
+                        <label>HS Code</label>
+                        <input type="text" name="hs_code" id="hs_code" value="{{ form_data.get('hs_code', '') }}" placeholder="e.g., 3403990000" maxlength="10" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>Order Details</h2>
+                <div class="order-details">
+                    <div class="input-group">
+                        <label>Order Quantity</label>
+                        <input type="number" name="order_qty" value="{{ form_data.get('order_qty', '') }}" min="1" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Incoterm</label>
+                        <select name="incoterm" required>
+                            {% for inc in incoterms %}
+                            <option value="{{ inc }}" {% if inc == form_data.get('incoterm', 'DDP') %}selected{% endif %}>{{ inc }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>SPI Applicable</label>
+                        <input type="checkbox" name="spi_applicable" {% if form_data.get('spi_applicable') == 'on' %}checked{% endif %}>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>Vendors</h2>
+                <div class="vendors">
+                    <div class="label-col" style="position: sticky; left: 0; z-index: 2;">
+                        <div class="input-group"><label>Vendor Name</label></div>
+                        <div class="input-group"><label>Vendor Country*</label></div>
+                        <div class="input-group"><label>Country of Origin*</label></div>
+                        <div class="input-group"><label>COGS ($ per unit)*</label></div>
+                        <div class="input-group"><label>Quantity</label></div>
+                        <!-- Dynamic duty rows will be inserted here by JavaScript -->
+                        <div class="input-group duty-labels-container"></div>
+                    </div>
+                    {% for vendor in vendors_form %}
+                    <div class="vendor-col" data-vendor-id="{{ vendor.id }}">
+                        <div class="input-group">
+                            <input type="text" name="vendor_name_{{ vendor.id }}" value="{{ vendor.name }}" placeholder="Vendor {{ vendor.id }}">
+                        </div>
+                        <div class="input-group">
+                            <select name="vendor_country_{{ vendor.id }}">
+                                <option value="">Select</option>
+                                {% for country in countries %}
+                                <option value="{{ country.code }}" {% if country.code == vendor.country %}selected{% endif %}>{{ country.flag }} {{ country.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <select name="vendor_coo_{{ vendor.id }}">
+                                <option value="">Select</option>
+                                {% for country in countries %}
+                                <option value="{{ country.code }}" {% if country.code == vendor.coo %}selected{% endif %}>{{ country.flag }} {{ country.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <input type="number" step="0.01" name="vendor_cost_{{ vendor.id }}" value="{{ vendor.cost }}" min="0.01">
+                        </div>
+                        <div class="input-group">
+                            <input type="number" name="vendor_quantity_{{ vendor.id }}" value="{{ vendor.quantity or form_data.get('order_qty', '') }}" min="1" readonly>
+                        </div>
+                        <!-- Dynamic duty results will be inserted here by JavaScript -->
+                        <div class="vendor-results-container"></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 20px;">
+                <button type="submit" name="action" value="run" id="run-btn" class="run-btn" disabled>RUN</button>
+                <button type="submit" name="action" value="save">SAVE RESULTS</button>
+            </div>
+        </form>
+
+        {% if error %}
+        <p class="error">{{ error }}</p>
+        {% endif %}
+
+        {% if results %}
+        <div class="results-section">
+            <h2>Calculation Results</h2>
+            <div style="margin-bottom: 15px;">
+                <p><strong>Product Description:</strong> {{ form_data.get('description', '') }}</p>
+                <p><strong>HS Code:</strong> {{ form_data.get('hs_code', '') }}</p>
+                <p><strong>Order Quantity:</strong> {{ form_data.get('order_qty', '') }}</p>
+                <p><strong>Incoterm:</strong> {{ form_data.get('incoterm', '') }}</p>
+                <p><strong>SPI Applicable:</strong> {{ 'Yes' if form_data.get('spi_applicable') == 'on' else 'No' }}</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <div style="text-align: center; margin-top: 20px;">
+            <button class="debug-btn" onclick="toggleDebug()">Toggle API Debug Responses</button>
+        </div>
+        <div id="debug" class="debug">
+            {% if debug_infos %}
+            <h4>GetQuote API Responses:</h4>
+            {% for debug_info in debug_infos %}
+            <details open>
+                <summary>GetQuote Debug {{ loop.index }} (Click to collapse)</summary>
+                <pre>{{ debug_info | safe }}</pre>
+            </details>
+            {% endfor %}
+            {% endif %}
+            <h4 id="hs-debug-header" style="display: none;">HS Classification Response:</h4>
+            <pre id="hs-debug-content" style="display: none;"></pre>
+            {% if not debug_infos %}
+            <p>No debug info available yet. Enter a description to see HS classification.</p>
+            {% endif %}
+        </div>
+
+    <script>
+        function toggleDebug() {
+            const debugDiv = document.getElementById('debug');
+            debugDiv.classList.toggle('active');
+        }
+
+        let timeout;
+        document.getElementById('description').addEventListener('input', function() {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                const desc = this.value.trim();
+                if (desc && desc.length > 5) {
+                    fetch('/classify_hs', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ description: desc })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('HS Response:', data);
+                        if (data.hs_code && data.hs_code !== 'Error' && data.hs_code.length >= 6) {
+                            const hsField = document.getElementById('hs_code');
+                            hsField.value = data.hs_code;
+                            hsField.style.backgroundColor = '#d4edda';
+                            console.log('HS Code populated:', data.hs_code);
+                            validateForm();
+                        } else {
+                            console.warn('No valid HS Code:', data.hs_code);
+                        }
+                        const debugDiv = document.getElementById('debug');
+                        const header = document.getElementById('hs-debug-header');
+                        const content = document.getElementById('hs-debug-content');
+                        header.style.display = 'block';
+                        content.style.display = 'block';
+                        content.textContent = JSON.stringify(data, null, 2);
+                        debugDiv.classList.add('active');
+                    })
+                    .catch(err => console.error('HS Error:', err));
+                }
+            }, 1000);
+        });
+
+        function validateForm(event) {
+            if (event) event.preventDefault();
+            const hsCode = document.getElementById('hs_code').value;
+
+            if (!hsCode) {
+                document.getElementById('run-btn').disabled = true;
+                return false;
+            }
+
+            // Check if at least one vendor has all required fields
+            const vendors = document.querySelectorAll('.vendor-col');
+            let hasAtLeastOneCompleteVendor = false;
+
+            vendors.forEach(vendor => {
+                const vendorId = vendor.dataset.vendorId;
+                const vendorCountry = vendor.querySelector(`select[name="vendor_country_${vendorId}"]`).value;
+                const coo = vendor.querySelector(`select[name="vendor_coo_${vendorId}"]`).value;
+                const cost = vendor.querySelector(`input[name="vendor_cost_${vendorId}"]`).value;
+
+                if (vendorCountry && coo && cost && parseFloat(cost) > 0) {
+                    hasAtLeastOneCompleteVendor = true;
+                }
+            });
+
+            if (!hasAtLeastOneCompleteVendor) {
+                document.getElementById('run-btn').disabled = true;
+                return false;
+            }
+
+            document.getElementById('run-btn').disabled = false;
+            return true;
+        }
+
+        document.getElementById('mainForm').addEventListener('input', validateForm);
+        document.getElementById('mainForm').addEventListener('change', validateForm);
+
+        document.getElementById('mainForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            if (!validateForm()) return;
+
+            const formData = new FormData(this);
+            const vendors = document.querySelectorAll('.vendor-col');
+
+            // Clear previous results and debug data
+            const debugDiv = document.getElementById('debug');
+            const debugContent = document.getElementById('vendor-debug-content');
+            if (!debugContent) {
+                const newDebugContent = document.createElement('div');
+                newDebugContent.id = 'vendor-debug-content';
+                debugDiv.appendChild(newDebugContent);
+            }
+
+            let debugResponses = [];
+            let allDutyTypes = new Set(); // Track all unique duty types across vendors
+
+            for (let i = 0; i < vendors.length; i++) {
+                const vendor = vendors[i];
+                const vendorId = vendor.dataset.vendorId;
+                const vendorCountry = vendor.querySelector(`select[name="vendor_country_${vendorId}"]`).value;
+                const coo = vendor.querySelector(`select[name="vendor_coo_${vendorId}"]`).value;
+                const cost = vendor.querySelector(`input[name="vendor_cost_${vendorId}"]`).value;
+                const quantity = vendor.querySelector(`input[name="vendor_quantity_${vendorId}"]`).value;
+                const name = vendor.querySelector(`input[name="vendor_name_${vendorId}"]`).value || `Vendor ${vendorId}`;
+
+                // Clear previous results for this vendor
+                const resultsContainer = vendor.querySelector('.vendor-results-container');
+                resultsContainer.innerHTML = '';
+
+                // Only calculate if vendor has all required fields
+                if (vendorCountry && coo && cost && parseFloat(cost) > 0) {
+                    // Show loading state
+                    resultsContainer.innerHTML = '<div class="loading">Calculating...</div>';
+
+                    try {
+                        const response = await fetch('/calculate_vendor', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                description: formData.get('description'),
+                                hs_code: formData.get('hs_code'),
+                                coo: coo,
+                                cost: cost,
+                                quantity: quantity,
+                                import_country: formData.get('import_country'),
+                                incoterm: formData.get('incoterm'),
+                                spi_applicable: formData.get('spi_applicable') === 'on'
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        // Add to debug responses
+                        debugResponses.push({
+                            vendor: name,
+                            vendorId: vendorId,
+                            success: result.success,
+                            request: result.request_payload,
+                            response: result.api_response || result.error_response || result,
+                            error: result.error
+                        });
+
+                        // Remove loading state
+                        resultsContainer.innerHTML = '';
+
+                        if (result.success && result.duty_lines) {
+                            // Track duty types
+                            result.duty_lines.forEach(duty => allDutyTypes.add(duty.description));
+
+                            // Store result data for later rendering
+                            vendor.dataset.dutyResult = JSON.stringify(result);
+
+                            // Display individual duty lines
+                            result.duty_lines.forEach(duty => {
+                                const dutyDiv = document.createElement('div');
+                                dutyDiv.className = 'input-group duty-result';
+                                dutyDiv.dataset.dutyType = duty.description;
+                                dutyDiv.innerHTML = `<span class="result-value">${duty.rate_percent.toFixed(2)}%</span>`;
+                                resultsContainer.appendChild(dutyDiv);
+                            });
+
+                            // Add Total Duty Rate
+                            const totalRateDiv = document.createElement('div');
+                            totalRateDiv.className = 'input-group duty-result total-duty-rate';
+                            totalRateDiv.innerHTML = `<span class="result-value"><strong>${result.total_duty_rate}</strong></span>`;
+                            resultsContainer.appendChild(totalRateDiv);
+
+                            // Add Total Duty Amount
+                            const totalAmountDiv = document.createElement('div');
+                            totalAmountDiv.className = 'input-group duty-result total-duty-amount';
+                            totalAmountDiv.innerHTML = `<span class="result-value"><strong>$${result.total_duty_amount.toFixed(2)}</strong></span>`;
+                            resultsContainer.appendChild(totalAmountDiv);
+
+                        } else {
+                            // Show error message to user
+                            resultsContainer.innerHTML = '<div class="error">Calculation failed</div>';
+                        }
+                    } catch (error) {
+                        debugResponses.push({
+                            vendor: name,
+                            vendorId: vendorId,
+                            success: false,
+                            error: error.message
+                        });
+                        resultsContainer.innerHTML = '<div class="error">Calculation failed</div>';
+                    }
+                }
+            }
+
+            // Update labels column with all unique duty types found
+            updateDutyLabels(allDutyTypes);
+
+            // Ensure all vendor results are aligned with labels
+            alignVendorResults(allDutyTypes);
+
+            // Update debug section with API responses
+            const debugContentDiv = document.getElementById('vendor-debug-content');
+            if (debugContentDiv && debugResponses.length > 0) {
+                debugContentDiv.innerHTML = '<h4>Vendor Calculation API Responses:</h4>';
+                debugResponses.forEach((debug, idx) => {
+                    const statusIcon = debug.success ? '✅' : '❌';
+                    let detailsHtml = `
+                        <details open>
+                            <summary>${statusIcon} Vendor ${debug.vendorId}: ${debug.vendor} - ${debug.success ? 'Success' : 'Failed'}</summary>
+                    `;
+
+                    // Show request payload
+                    if (debug.request) {
+                        detailsHtml += `
+                            <h5>Request Payload:</h5>
+                            <pre>${JSON.stringify(debug.request, null, 2)}</pre>
+                        `;
+                    }
+
+                    // Show error if failed
+                    if (!debug.success && debug.error) {
+                        detailsHtml += `
+                            <h5 style="color: red;">Error:</h5>
+                            <pre style="color: red;">${debug.error}</pre>
+                        `;
+                    }
+
+                    // Show API response
+                    if (debug.response) {
+                        detailsHtml += `
+                            <h5>API Response:</h5>
+                            <pre>${JSON.stringify(debug.response, null, 2)}</pre>
+                        `;
+                    }
+
+                    detailsHtml += '</details>';
+                    debugContentDiv.innerHTML += detailsHtml;
+                });
+                debugDiv.classList.add('active');
+            }
+        });
+
+        function updateDutyLabels(dutyTypes) {
+            const labelsContainer = document.querySelector('.duty-labels-container');
+            labelsContainer.innerHTML = '';
+
+            // Add label for each duty type found
+            dutyTypes.forEach(dutyType => {
+                const labelDiv = document.createElement('div');
+                labelDiv.className = 'input-group';
+                labelDiv.dataset.dutyType = dutyType;
+                labelDiv.innerHTML = `<label>${dutyType}</label>`;
+                labelsContainer.appendChild(labelDiv);
+            });
+
+            // Add labels for totals
+            const totalRateLabel = document.createElement('div');
+            totalRateLabel.className = 'input-group';
+            totalRateLabel.innerHTML = '<label><strong>Total Duty Rate</strong></label>';
+            labelsContainer.appendChild(totalRateLabel);
+
+            const totalAmountLabel = document.createElement('div');
+            totalAmountLabel.className = 'input-group';
+            totalAmountLabel.innerHTML = '<label><strong>Total Duty ($)</strong></label>';
+            labelsContainer.appendChild(totalAmountLabel);
+        }
+
+        function alignVendorResults(dutyTypes) {
+            // Ensure all vendors have the same duty rows (even if N/A)
+            const vendors = document.querySelectorAll('.vendor-col');
+
+            vendors.forEach(vendor => {
+                const resultsContainer = vendor.querySelector('.vendor-results-container');
+                const resultData = vendor.dataset.dutyResult;
+
+                if (resultData) {
+                    const result = JSON.parse(resultData);
+                    const vendorDutyMap = new Map();
+
+                    // Map vendor's duties by description
+                    result.duty_lines.forEach(duty => {
+                        vendorDutyMap.set(duty.description, duty);
+                    });
+
+                    // Clear and rebuild with proper order
+                    resultsContainer.innerHTML = '';
+
+                    // Add duties in the same order as labels
+                    dutyTypes.forEach(dutyType => {
+                        const duty = vendorDutyMap.get(dutyType);
+                        const dutyDiv = document.createElement('div');
+                        dutyDiv.className = 'input-group duty-result';
+                        dutyDiv.dataset.dutyType = dutyType;
+
+                        if (duty) {
+                            dutyDiv.innerHTML = `<span class="result-value">${duty.rate_percent.toFixed(2)}%</span>`;
+                        } else {
+                            dutyDiv.innerHTML = '<span class="result-value">N/A</span>';
+                        }
+                        resultsContainer.appendChild(dutyDiv);
+                    });
+
+                    // Re-add totals
+                    const totalRateDiv = document.createElement('div');
+                    totalRateDiv.className = 'input-group duty-result total-duty-rate';
+                    totalRateDiv.innerHTML = `<span class="result-value"><strong>${result.total_duty_rate}</strong></span>`;
+                    resultsContainer.appendChild(totalRateDiv);
+
+                    const totalAmountDiv = document.createElement('div');
+                    totalAmountDiv.className = 'input-group duty-result total-duty-amount';
+                    totalAmountDiv.innerHTML = `<span class="result-value"><strong>$${result.total_duty_amount.toFixed(2)}</strong></span>`;
+                    resultsContainer.appendChild(totalAmountDiv);
+                }
+            });
+        }
+
+        // Handle input changes to invalidate results
+        document.querySelectorAll('.vendor-col input, .vendor-col select').forEach(input => {
+            input.addEventListener('change', function() {
+                const vendor = this.closest('.vendor-col');
+                const resultsContainer = vendor.querySelector('.vendor-results-container');
+                if (resultsContainer) {
+                    resultsContainer.innerHTML = '';
+                }
+                vendor.removeAttribute('data-duty-result');
+                validateForm();
+            });
+        });
+
+        // Prepopulate Vendor Country to Country of Origin
+        document.querySelectorAll('select[name^="vendor_country_"]').forEach(vendorCountrySelect => {
+            vendorCountrySelect.addEventListener('change', function() {
+                const vendorId = this.name.match(/\d+/)[0];
+                const cooSelect = document.querySelector(`select[name="vendor_coo_${vendorId}"]`);
+                if (cooSelect && this.value) {
+                    cooSelect.value = this.value;
+                }
+                // Trigger validation after auto-fill
+                validateForm();
+            });
+        });
+
+        // Prepopulate Order Quantity to all vendor Quantity fields
+        const orderQtyInput = document.querySelector('input[name="order_qty"]');
+        if (orderQtyInput) {
+            orderQtyInput.addEventListener('input', function() {
+                const quantity = this.value;
+                document.querySelectorAll('input[name^="vendor_quantity_"]').forEach(vendorQtyInput => {
+                    vendorQtyInput.value = quantity;
+                });
+                // Trigger validation after auto-fill
+                validateForm();
+            });
+        }
+
+        // Initial validation on page load
+        validateForm();
+    </script>
+</body>
+</html>
