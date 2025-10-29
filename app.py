@@ -48,14 +48,10 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-# Avalara API Configuration
+# Avalara API Configuration (Token-based only)
+AVALARA_API_BASE = 'https://ns1-quoting-sbx.xbo.avalara.com/api/v2'
 AVALARA_TOKEN = os.getenv('AVALARA_TOKEN')
 AVALARA_COMPANY_ID = os.getenv('AVALARA_COMPANY_ID')
-AVALARA_API_BASE = 'https://ns1-quoting-sbx.xbo.avalara.com/api/v2'
-
-# 3CEOnline and Avalara credentials for HS Code classification
-AVALARA_USERNAME = os.getenv("AVALARA_USERNAME")
-AVALARA_PASSWORD = os.getenv("AVALARA_PASSWORD")
 
 # ISO-2 Country codes with proper flag emojis (alphabetically sorted)
 COUNTRIES = [
@@ -108,7 +104,9 @@ HS_CODES = {
 
 
 def get_avalara_auth_header():
-    """Generate Basic Auth header for Avalara API using token from .env"""
+    """Generate Basic Auth header for Avalara API using token"""
+    if not AVALARA_TOKEN:
+        raise ValueError("Missing AVALARA_TOKEN in environment variables")
     return f"Basic {AVALARA_TOKEN}"
 
 
@@ -149,10 +147,20 @@ def call_global_compliance_api(hs_code, coo, vendor_country, cost_per_unit, quan
     try:
         url = f"{AVALARA_API_BASE}/companies/{AVALARA_COMPANY_ID}/globalcompliance"
 
+        # Get auth header
+        auth_header = get_avalara_auth_header()
+
         headers = {
             'Content-Type': 'application/json',
-            'Authorization': get_avalara_auth_header()
+            'Authorization': auth_header
         }
+
+        # Log request details (mask auth for security)
+        auth_preview = auth_header[:15] + "..." if len(auth_header) > 15 else auth_header
+        logger.debug(f"Making Avalara API call to: {url}")
+        logger.debug(f"Auth header preview: {auth_preview}")
+        logger.debug(f"Company ID: {AVALARA_COMPANY_ID}")
+        logger.debug(f"HS Code: {hs_code}, COO: {coo}, Destination: {import_country}")
 
         # Build request payload matching exact Avalara format
         payload = {
@@ -262,15 +270,32 @@ def call_global_compliance_api(hs_code, coo, vendor_country, cost_per_unit, quan
         # Capture more detailed error information
         error_details = str(e)
         response_text = None
+        status_code = None
+
         if hasattr(e, 'response') and e.response is not None:
+            status_code = e.response.status_code
             try:
                 response_text = e.response.json()
             except:
                 response_text = e.response.text
 
+            # Specific handling for 401 Unauthorized
+            if status_code == 401:
+                logger.error("❌ Authentication failed (401 Unauthorized)")
+                logger.error(f"URL: {url}")
+                logger.error(f"Check your .env file contains:")
+                logger.error("  - AVALARA_TOKEN (Base64 encoded)")
+                logger.error(f"  - AVALARA_COMPANY_ID={AVALARA_COMPANY_ID}")
+                logger.error(f"  - AVALARA_API_BASE={AVALARA_API_BASE}")
+
+                error_details = "Authentication failed. Please verify AVALARA_TOKEN in .env file."
+
+        logger.error(f"API Error [{status_code}]: {error_details}")
+
         return {
             'success': False,
             'error': error_details,
+            'status_code': status_code,
             'error_response': response_text,
             'api_response': None,
             'request_payload': payload if 'payload' in locals() else None
@@ -482,7 +507,7 @@ def classify_hs():
 
         # Step 2: Call Avalara API (either with HS6 code from classification, or with description only)
         avalara_headers = {
-            "Authorization": "Basic " + base64.b64encode(f"{AVALARA_USERNAME}:{AVALARA_PASSWORD}".encode()).decode(),
+            "Authorization": get_avalara_auth_header(),
             "Content-Type": "application/json"
         }
 
@@ -498,7 +523,7 @@ def classify_hs():
         destination_region = get_region_for_country(destination_country)
 
         # Build Avalara quoting URL
-        avalara_url = f"https://quoting.xbo.dev.avalara.io/api/v2/companies/{AVALARA_COMPANY_ID}/globalcompliance"
+        avalara_url = f"{AVALARA_API_BASE}/companies/{AVALARA_COMPANY_ID}/globalcompliance"
 
         avalara_payload = {
             "id": "classification-request",
