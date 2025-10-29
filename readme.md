@@ -1,373 +1,170 @@
-# Tariff Modelling Application - API Integration Update
+# 🎯 Tariff Modeling Application - Ready for Deployment
 
-## 🎉 What's New
+## ✅ What's Been Updated
 
-This version integrates with the **Avalara Global Compliance API** to provide real, accurate duty calculations instead of mock data.
+### 1. **Total Cost Row with Color Coding**
+   - New "**Total Cost ($)**" row at the bottom of vendor comparison
+   - Automatic calculation: `Total Cost = (COGS × Quantity) + Duty Amount`
+   - **Color-coded** from green (cheapest) to red (most expensive)
+   - **Entire cheapest vendor column** highlighted with green border
 
-### Key Features:
-- ✅ Real-time duty calculations via Avalara API
-- ✅ Dynamic duty rows based on actual API responses
-- ✅ Support for multiple duty types (MFN, ADD, CVD, Section 232, etc.)
-- ✅ Automatic handling of varying duty structures per country
-- ✅ API response debugging for troubleshooting
-- ✅ Loading states and user-friendly error messages
-- ✅ Flexible vendor comparison (1-6 vendors)
+### 2. **Expanded Country List**
+   - Increased from 21 to **36 countries**
+   - Sorted **alphabetically**
+   - Includes all requested: US, CN, EU countries, GB, PH, IN, ID, MY, TH, AU, CA
 
 ---
 
-## 📋 Setup Instructions
+## 📦 Files Ready for Deployment
 
-### 1. Environment Variables
+1. **app.py** (36KB) - Flask backend with updated country list
+2. **index.html** (49KB) - Frontend with color-coding and Total Cost row
+3. **UPDATE_SUMMARY.md** - Detailed technical summary
+4. **VISUAL_GUIDE.md** - Visual examples and testing guide
 
-Create a `.env` file in the project root with your Avalara API credentials:
+---
 
-```env
-AVALARA_USERNAME=your_username_here
-AVALARA_PASSWORD=your_password_here
-AVALARA_COMPANY_ID=your_company_id_here
+## 🚀 Quick Deployment to Render.com
+
+### Step 1: Update Your PyCharm Project
+```bash
+# Copy the updated files to your PyCharm project
+# Replace your existing app.py and index.html
+
+# File locations in PyCharm:
+# - app.py (root directory)
+# - index.html (in templates/ folder if using Flask templates)
+#   OR just use it as standalone HTML
 ```
 
-**Note:** Use the same credentials as your existing Avalara quotes method.
-
-### 2. Install Dependencies
-
+### Step 2: Test Locally
 ```bash
-pip install -r requirements.txt
-```
+# Ensure you have a .env file with:
+# AVALARA_TOKEN=your_base64_token
+# AVALARA_COMPANY_ID=your_company_id
+# AVALARA_USERNAME=your_username
+# AVALARA_PASSWORD=your_password
+# API_TOKEN=your_3ce_token
+# AUTH_USER=admin
+# AUTH_PASS=password
 
-### 3. Run the Application
-
-```bash
+# Run the application
 python app.py
+
+# Open browser to: http://localhost:5000
 ```
 
-Access at: `http://localhost:5000`
+### Step 3: Verify the Changes
+✅ Test Total Cost calculation with 2-3 vendors  
+✅ Verify color coding (green = cheapest, red = most expensive)  
+✅ Check country dropdown shows 36 countries alphabetically  
+✅ Confirm cheapest vendor column has green border  
 
----
+### Step 4: Deploy to Render.com
+```bash
+# 1. Commit to GitHub
+git add app.py index.html
+git commit -m "Add Total Cost row with color coding and expand country list"
+git push origin main
 
-## 🔧 How It Works
+# 2. Render.com will automatically redeploy
+# (if auto-deploy is enabled)
 
-### API Integration Flow
-
-1. **User fills in vendor data** (Vendor Country, COO, COGS)
-2. **Click RUN button**
-3. **For each complete vendor:**
-   - Application calls Avalara Global Compliance API
-   - API endpoint: `POST /api/v2/companies/{COMPANY_ID}/globalcompliance`
-   - Request includes: HS Code, COO, Vendor Country, Cost, Quantity, Product Description
-4. **API returns `dutyGranularity` array** with duty types and rates
-5. **Application parses duties** and displays them dynamically
-6. **Results shown** with proper alignment across vendors
-
-### API Request Structure
-
-```json
-{
-    "companyId": 112244,
-    "currency": "usd",
-    "b2b": true,
-    "shipFrom": {
-        "country": "TH"
-    },
-    "destinations": [{
-        "shipTo": {
-            "country": "us",
-            "region": "ca",
-            "postalCode": "20240"
-        }
-    }],
-    "lines": [{
-        "lineNumber": 1,
-        "quantity": 100,
-        "item": {
-            "itemCode": "TARIFF-CALC-001",
-            "description": "Product description",
-            "classifications": [{
-                "country": "US",
-                "hscode": "7317006530"
-            }],
-            "classificationParameters": [{
-                "name": "price",
-                "value": "100.50",
-                "unit": "usd"
-            }, {
-                "name": "coo",
-                "value": "TH"
-            }],
-            "parameters": [{
-                "name": "SHIPPING",
-                "value": "0",
-                "unit": "usd"
-            }]
-        }
-    }],
-    "type": "QUOTE_MAXIMUM"
-}
-```
-
-### API Response Parsing
-
-The application extracts duties from the `dutyGranularity` array:
-
-```json
-"dutyGranularity": [
-    {
-        "description": "MFN Duty",
-        "rate": "0.095",
-        "type": "MFN"
-    },
-    {
-        "description": "ADD Duty",
-        "rate": "0.0188",
-        "type": "ADD"
-    },
-    {
-        "description": "SECTION 232 STEEL",
-        "rate": "0.5",
-        "type": "PUNITIVE"
-    }
-]
-```
-
-Each duty is displayed as a separate row with:
-- **Label**: `description` field (e.g., "MFN Duty")
-- **Rate**: `rate * 100` as percentage (e.g., 9.5%)
-- **N/A**: Shown if duty type doesn't apply to a specific vendor
-
----
-
-## 🎨 Dynamic Duty Display
-
-### Example Output
-
-**Vendor 1 (Thailand → US)**
-- MFN Duty: 9.50%
-- ADD Duty: 1.88%
-- SECTION 232 STEEL: 50.00%
-- **Total Duty Rate: 61.38%**
-- **Total Duty: $6,138.00**
-
-**Vendor 2 (China → US)**
-- MFN Duty: 0.00%
-- ADD Duty: 13.00%
-- SECTION 301 TARIFF: 25.00%
-- SECTION 232 STEEL: N/A
-- **Total Duty Rate: 38.00%**
-- **Total Duty: $3,800.00**
-
-### How Alignment Works
-
-The application ensures all vendors show the same duty types:
-1. Collects all unique duty types from all vendor responses
-2. Creates labels for each duty type
-3. For each vendor:
-   - Shows actual rate if duty applies
-   - Shows "N/A" if duty doesn't apply
-4. Maintains consistent row order across all vendors
-
----
-
-## 🐛 Debugging
-
-### API Response Viewing
-
-Click **"Toggle API Debug Responses"** button to view:
-- Raw API requests sent to Avalara
-- Complete API responses received
-- Error messages and stack traces
-- Per-vendor calculation details
-
-### Debug Section Shows:
-
-```
-Vendor 1: Thai Supplier - Success
-{
-  "globalCompliance": [...],
-  "dutyGranularity": [...],
-  ...full API response...
-}
-
-Vendor 2: Chinese Supplier - Failed
-{
-  "error": "Connection timeout",
-  ...error details...
-}
-```
-
-### Common Issues
-
-**"Calculation failed" message:**
-- Check debug section for detailed error
-- Verify API credentials in `.env`
-- Ensure COMPANY_ID is correct
-- Check network connectivity
-
-**Empty duty results:**
-- API may return no duties for certain country combinations
-- Check if HS Code is valid
-- Verify COO and destination country
-
-**N/A showing for all duties:**
-- Vendor may have no applicable duties
-- Check API response in debug section
-
----
-
-## 📊 Calculation Details
-
-### Total Duty Rate
-Sum of all applicable duty rates:
-```
-Total Duty Rate = MFN + ADD + CVD + Section 232 + Section 301 + ...
-```
-
-### Total Duty Amount
-```
-Total Duty = Quantity × COGS × (Total Duty Rate / 100)
-```
-
-Example:
-- Quantity: 100
-- COGS: $100
-- Total Duty Rate: 61.38%
-- Total Duty: 100 × 100 × 0.6138 = **$6,138.00**
-
----
-
-## 🔄 Changes from Previous Version
-
-### Removed Mock Calculations
-- ❌ Baseline Tariff % (mock)
-- ❌ Reciprocal % (mock)
-- ❌ Chapter 301 % (mock)
-- ❌ IEEPA % or SPI % (mock)
-
-### Added Real API Integration
-- ✅ Dynamic duty types from API
-- ✅ MFN Duty (Most Favored Nation)
-- ✅ ADD/CVD (Anti-dumping/Countervailing duties)
-- ✅ Section 232 (Steel/Aluminum tariffs)
-- ✅ Section 301 (China tariffs)
-- ✅ Other punitive/preferential duties
-- ✅ Accurate rate calculations
-- ✅ Real-time data
-
-### UI Improvements
-- ✅ Dynamic row generation
-- ✅ Proper duty type alignment across vendors
-- ✅ Loading states during API calls
-- ✅ User-friendly error messages
-- ✅ Detailed API debugging
-
----
-
-## 📁 Project Structure
-
-```
-tariff-modelling/
-├── app.py                      # Flask backend with API integration
-├── templates/
-│   └── index.html             # Frontend with dynamic duty rendering
-├── requirements.txt            # Python dependencies
-├── .env                        # Your API credentials (create this)
-├── .env.example               # Example environment variables
-└── README.md                  # This file
+# 3. Or manually trigger deployment in Render dashboard
 ```
 
 ---
 
-## 🚀 Usage Guide
+## 🎨 Visual Preview
 
-### Step 1: Enter Product Details
-- Import Date
-- Product Description (auto-fills HS Code)
-- HS Code
+### Color Coding System
+```
+🟢 GREEN    = Cheapest vendor
+🟡 YELLOW   = Mid-range vendor
+🟠 ORANGE   = Above average cost
+🔴 RED      = Most expensive vendor
+```
 
-### Step 2: Enter Order Details
-- Order Quantity (auto-fills to all vendors)
-- Incoterm
-- SPI Applicable (optional)
-
-### Step 3: Fill Vendor Data
-For each vendor you want to compare:
-- Vendor Country (auto-fills to COO)
-- Country of Origin
-- COGS per unit
-
-**Note:** Use 1-6 vendors as needed. Empty vendors are skipped automatically.
-
-### Step 4: Calculate
-- Click **RUN** button
-- Wait for calculations (shows "Calculating..." for each vendor)
-- Review results across vendors
-- Check debug section if needed
-
-### Step 5: Compare Results
-- Different duty types shown per vendor
-- Total Duty Rate and Amount calculated
-- Vendors with lowest/highest duties visible
+### Example Comparison
+```
+Vendor A: $27,455 [🔴 RED]      ← Most expensive
+Vendor B: $22,000 [🟢 GREEN]    ← Cheapest (column highlighted)
+Vendor C: $22,135 [🟢 LIGHT]    ← Second cheapest
+Vendor D: $27,075 [🟠 ORANGE]   ← Above average
+```
 
 ---
 
-## 🔐 Security Notes
+## 🔧 Technical Details
 
-- **Never commit `.env` file** to version control
-- Keep API credentials secure
-- Use `.env.example` as template only
-- API credentials are same as Quotes method
+### Color Algorithm
+- Calculates cost range: `maxCost - minCost`
+- Assigns gradient: `rgb(r, g, 0)` where:
+  - `r = 255 × ratio` (increases with cost)
+  - `g = 255 × (1 - ratio)` (decreases with cost)
 
----
-
-## 📞 Support
-
-### If calculations fail:
-1. Check debug section for API response
-2. Verify `.env` credentials
-3. Ensure network connectivity
-4. Review API endpoint URL
-
-### If duties seem incorrect:
-1. Verify HS Code is correct
-2. Check Country of Origin
-3. Review API response in debug section
-4. Compare with Avalara's online tools
+### Column Highlighting
+- Cheapest vendor column gets:
+  - Background: `#f0fdf4` (mint green)
+  - Border: `3px solid #10b981` (emerald)
+  - Shadow: `0 0 0 3px rgba(16, 185, 129, 0.1)`
 
 ---
 
-## ✨ Key Benefits
+## 📋 Testing Checklist
 
-### Real Data
-- Accurate duty calculations from Avalara
-- Up-to-date tariff rates
-- Comprehensive duty type coverage
+Before deploying to production:
 
-### Flexible
-- Handles varying duty structures
-- Adapts to different countries
-- Shows N/A for non-applicable duties
-
-### Transparent
-- View complete API responses
-- Debug issues easily
-- Understand calculation details
-
-### User-Friendly
-- Clean, aligned display
-- Loading indicators
-- Clear error messages
+- [ ] Test with 1 vendor (should show green)
+- [ ] Test with 2 vendors (green vs red)
+- [ ] Test with 3+ vendors (verify gradient)
+- [ ] Test with identical costs (no errors)
+- [ ] Verify all 36 countries appear alphabetically
+- [ ] Test Excel export still works
+- [ ] Test on mobile/tablet (responsive design)
+- [ ] Verify authentication still works
 
 ---
 
-## 🎯 Next Steps
+## 📚 Additional Documentation
 
-Suggested enhancements:
-- Add currency conversion support
-- Include freight cost estimates
-- Save vendor comparisons
-- Export results to Excel/PDF
-- Historical rate tracking
-- Batch calculations
+- **UPDATE_SUMMARY.md** - Full technical changelog
+- **VISUAL_GUIDE.md** - Visual examples and CSS details
 
 ---
 
-**Ready to use!** Set up your `.env` file and start comparing tariffs across vendors with real Avalara data.
+## 🐛 Troubleshooting
+
+### Colors Not Showing?
+- Check browser console (F12) for errors
+- Verify JavaScript is enabled
+- Clear cache and reload
+
+### Country Dropdown Empty?
+- Verify app.py COUNTRIES list is updated
+- Check Flask is running latest code
+- Restart Flask server
+
+### Excel Export Not Working?
+- Ensure openpyxl is installed: `pip install openpyxl`
+- Check server logs for errors
+
+---
+
+## 📞 Need Help?
+
+- Review **VISUAL_GUIDE.md** for detailed examples
+- Check **UPDATE_SUMMARY.md** for technical details
+- Test locally before deploying to Render.com
+
+---
+
+**🎉 Your updated Tariff Modeling Tool is ready!**
+
+All features from your mockup have been implemented:
+✅ Total Cost row  
+✅ Color coding (green to red)  
+✅ Cheapest vendor highlighting  
+✅ 36 countries alphabetically sorted  
+
+**Happy deploying!** 🚀

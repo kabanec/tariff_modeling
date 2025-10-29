@@ -4,551 +4,98 @@
     <meta charset="UTF-8">
     <title>Avalara Tariff Modeling Tool</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: #f5f7f9;
-            color: #1a2332;
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0;
-        }
-
-        /* Header Styling - Avalara Orange */
-        .app-header {
-            background: linear-gradient(135deg, #ff6600 0%, #ff8533 100%);
-            color: white;
-            padding: 32px 40px;
-            margin-bottom: 0;
-            box-shadow: 0 4px 12px rgba(255, 102, 0, 0.15);
-        }
-
-        .app-header h1 {
-            font-size: 2rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-            letter-spacing: -0.5px;
-        }
-
-        .app-header p {
-            font-size: 1rem;
-            opacity: 0.95;
-            font-weight: 400;
-        }
-
-        /* Main Content Area */
-        .main-content {
-            padding: 24px 40px 40px;
-            background: white;
-        }
-
-        .form-section {
-            background: white;
-            padding: 24px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            border: 1px solid #e5e7eb;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        }
-
-        .form-section h2 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #1a2332;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 2px solid #f0f0f0;
-        }
-
-        /* Input Grid Layout */
-        .header {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 16px;
-            margin-bottom: 0;
-        }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-        }
-
-        label {
-            font-weight: 600;
-            margin-bottom: 8px;
-            color: #1a2332;
-            font-size: 0.875rem;
-            letter-spacing: 0.02em;
-            white-space: nowrap;
-        }
-
-        label .required {
-            color: #ff6600;
-            margin-left: 2px;
-        }
-
-        input, select {
-            padding: 10px 14px;
-            border: 1.5px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            background: white;
-            color: #1a2332;
-            transition: all 0.2s ease;
-            font-family: inherit;
-        }
-
-        input:focus, select:focus {
-            outline: none;
-            border-color: #ff6600;
-            box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1);
-        }
-
-        input:hover, select:hover {
-            border-color: #ff6600;
-        }
-
-        input[type="date"] {
-            cursor: pointer;
-        }
-
-        /* Order Details - FIX #1 & #2 */
-        .order-details {
-            display: flex;
-            gap: 24px;
-            align-items: flex-end;
-            margin-top: 0;
-        }
-
-        .order-details .input-group {
-            flex: 0 0 auto;
-        }
-
-        .order-details .input-group input[type="number"] {
-            max-width: 150px;
-        }
-
-        .checkbox-group {
-            display: flex;
-            align-items: center;
-            padding: 0;
-            margin-bottom: 8px;
-        }
-
-        .checkbox-group input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            margin-right: 10px;
-            cursor: pointer;
-            accent-color: #ff6600;
-        }
-
-        .checkbox-group label {
-            margin: 0;
-            cursor: pointer;
-            font-weight: 500;
-            white-space: nowrap;
-        }
-
-        /* Vendor Table Styling - FIX #3, #4, #5 */
-        .vendors {
-            display: grid;
-            grid-template-columns: 200px repeat(6, 1fr);
-            gap: 1px;
-            background: #e5e7eb;
-            border-radius: 8px;
-            overflow: hidden;
-            margin-top: 20px;
-        }
-
-        .vendors .label-col {
-            background: #fff9e6;
-            padding: 12px 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 1px;
-            position: sticky;
-            left: 0;
-            z-index: 10;
-        }
-
-        .vendors .label-col .input-group {
-            min-height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            background: #fff9e6;
-            padding: 8px;
-            border-radius: 4px;
-        }
-
-        .vendors .label-col .input-group label {
-            margin: 0;
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: #1a2332;
-            text-align: left;
-            white-space: normal;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            hyphens: auto;
-            line-height: 1.4;
-            width: 100%;
-        }
-
-        .vendors .vendor-col {
-            background: white;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 1px;
-            border-right: 1px solid #e5e7eb;
-        }
-
-        .vendors .vendor-col:last-child {
-            border-right: none;
-        }
-
-        .vendors .vendor-col .input-group {
-            min-height: 50px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            padding: 0;
-        }
-
-        .vendors input,
-        .vendors select {
-            width: 100%;
-            padding: 8px 12px;
-            font-size: 0.875rem;
-            border-radius: 6px;
-        }
-
-        .vendors input[readonly] {
-            background-color: #f3f4f6;
-            color: #6b7280;
-            cursor: not-allowed;
-        }
-
-        /* Results Styling */
-        .vendor-results-container {
-            display: flex;
-            flex-direction: column;
-            gap: 1px;
-            width: 100%;
-        }
-
-        .vendor-results-container .duty-result {
-            background: #fef3f0;
-            padding: 10px;
-            border-radius: 6px;
-            text-align: center;
-            min-height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.875rem;
-            color: #1a2332;
-            border: 1px solid #fed7cc;
-        }
-
-        .vendor-results-container .total-duty-rate,
-        .vendor-results-container .total-duty-amount {
-            background: #ff6600;
-            color: white;
-            font-weight: 600;
-            border: 1px solid #ff6600;
-        }
-
-        .duty-labels-container {
-            display: flex;
-            flex-direction: column;
-            gap: 1px;
-            width: 100%;
-        }
-
-        .duty-labels-container .input-group {
-            min-height: 50px;
-            display: flex;
-            align-items: center;
-            background: #fff9e6;
-            padding: 8px;
-            border-radius: 4px;
-        }
-
-        .duty-labels-container .input-group label {
-            margin: 0;
-            font-size: 0.875rem;
-            text-align: left;
-            white-space: normal;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            line-height: 1.4;
-            width: 100%;
-        }
-
-        .loading {
-            padding: 20px;
-            text-align: center;
-            font-size: 1rem;
-            color: #ff6600;
-            font-weight: 600;
-        }
-
-        .error {
-            color: #dc2626;
-            font-weight: 600;
-            text-align: center;
-            padding: 10px;
-            background: #fef2f2;
-            border-radius: 6px;
-            border: 1px solid #fecaca;
-        }
-
-        /* Button Styling */
-        .button-group {
-            display: flex;
-            justify-content: center;
-            gap: 16px;
-            margin: 32px 0 24px;
-        }
-
-        button {
-            padding: 14px 32px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            font-family: inherit;
-            letter-spacing: 0.02em;
-        }
-
-        button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        button:active {
-            transform: translateY(0);
-        }
-
-        .run-btn {
-            background: linear-gradient(135deg, #006B7D 0%, #008B9F 100%);
-            color: white;
-            box-shadow: 0 2px 8px rgba(0, 107, 125, 0.2);
-        }
-
-        .run-btn:disabled {
-            background: #d1d5db;
-            cursor: not-allowed;
-            box-shadow: none;
-            transform: none;
-        }
-
-        .save-btn {
-            background: #ff6600;
-            color: white;
-            box-shadow: 0 2px 8px rgba(255, 102, 0, 0.2);
-        }
-
-        .debug-btn {
-            background: white;
-            color: #6b7280;
-            border: 1.5px solid #d1d5db;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-        }
-
-        .debug-btn:hover {
-            background: #f9fafb;
-            border-color: #9ca3af;
-        }
-
-        /* Debug Section */
-        .debug {
-            margin-top: 24px;
-            border: 1.5px solid #e5e7eb;
-            padding: 20px;
-            background: #f9fafb;
-            display: none;
-            max-height: 500px;
-            overflow-y: auto;
-            border-radius: 12px;
-        }
-
-        .debug.active {
-            display: block;
-        }
-
-        .debug h4 {
-            color: #374151;
-            margin-bottom: 12px;
-            font-size: 1rem;
-        }
-
-        .debug details {
-            background: white;
-            padding: 16px;
-            margin-bottom: 12px;
-            border-radius: 8px;
-            border: 1px solid #e5e7eb;
-        }
-
-        .debug summary {
-            cursor: pointer;
-            font-weight: 600;
-            color: #1a2332;
-            padding: 8px;
-            border-radius: 4px;
-            transition: background 0.2s;
-        }
-
-        .debug summary:hover {
-            background: #f3f4f6;
-        }
-
-        .debug h5 {
-            color: #6b7280;
-            margin: 16px 0 8px;
-            font-size: 0.875rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        pre {
-            white-space: pre-wrap;
-            font-size: 0.8rem;
-            background: #1a2332;
-            color: #10b981;
-            padding: 16px;
-            border-radius: 6px;
-            overflow-x: auto;
-            font-family: 'Monaco', 'Menlo', monospace;
-        }
-
-        #hs_code {
-            background-color: #f0f9ff;
-            border-color: #93c5fd;
-        }
-
-        /* Footer */
-        .footer {
-            text-align: center;
-            padding: 24px;
-            color: #9ca3af;
-            font-size: 0.875rem;
-            background: white;
-            border-top: 1px solid #e5e7eb;
-        }
-
-        /* Responsive Design */
-        @media (max-width: 1200px) {
-            .header {
-                grid-template-columns: repeat(3, 1fr);
-            }
-
-            .vendors {
-                grid-template-columns: 200px repeat(3, 1fr);
-            }
-        }
-
-        @media (max-width: 768px) {
-            .header {
-                grid-template-columns: 1fr;
-            }
-
-            .order-details {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .order-details .input-group input[type="number"] {
-                max-width: 100%;
-            }
-
-            .vendors {
-                grid-template-columns: 200px 1fr;
-                overflow-x: auto;
-            }
-
-            .app-header {
-                padding: 24px 20px;
-            }
-
-            .main-content {
-                padding: 16px 20px;
-            }
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f5f7f9; color: #1a2332; line-height: 1.6; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 0; }
+        .app-header { background: linear-gradient(135deg, #ff6600 0%, #ff8533 100%); color: white; padding: 32px 40px; margin-bottom: 0; box-shadow: 0 4px 12px rgba(255, 102, 0, 0.15); }
+        .app-header h1 { font-size: 2rem; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.5px; }
+        .app-header p { font-size: 1rem; opacity: 0.95; font-weight: 400; }
+        .main-content { padding: 24px 40px 40px; background: white; }
+        .form-section { background: white; padding: 24px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); }
+        .form-section h2 { font-size: 1.25rem; font-weight: 600; color: #1a2332; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #f0f0f0; }
+        .header { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; margin-bottom: 0; }
+        .input-group { display: flex; flex-direction: column; }
+        label { font-weight: 600; margin-bottom: 8px; color: #1a2332; font-size: 0.875rem; letter-spacing: 0.02em; white-space: nowrap; }
+        label .required { color: #ff6600; margin-left: 2px; }
+        input, select { padding: 10px 14px; border: 1.5px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; background: white; color: #1a2332; transition: all 0.2s ease; font-family: inherit; }
+        input:focus, select:focus { outline: none; border-color: #ff6600; box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1); }
+        input:hover, select:hover { border-color: #ff6600; }
+        input[type="date"] { cursor: pointer; }
+        .order-details { display: flex; gap: 24px; align-items: flex-end; margin-top: 0; }
+        .order-details .input-group { flex: 0 0 auto; }
+        .order-details .input-group input[type="number"] { max-width: 150px; }
+        .checkbox-group { display: flex; align-items: center; padding: 0; margin-bottom: 8px; }
+        .checkbox-group input[type="checkbox"] { width: 20px; height: 20px; margin-right: 10px; cursor: pointer; accent-color: #ff6600; }
+        .checkbox-group label { margin: 0; cursor: pointer; font-weight: 500; white-space: nowrap; }
+        .vendors { display: grid; grid-template-columns: 200px repeat(6, 1fr); gap: 1px; background: #e5e7eb; border-radius: 8px; overflow: hidden; margin-top: 20px; }
+        .vendors .label-col { background: #fff9e6; padding: 12px 16px; display: flex; flex-direction: column; gap: 1px; position: sticky; left: 0; z-index: 10; }
+        .vendors .label-col .input-group { min-height: 50px; display: flex; align-items: center; justify-content: flex-start; background: #fff9e6; padding: 8px; border-radius: 4px; }
+        .vendors .label-col .input-group label { margin: 0; font-size: 0.875rem; font-weight: 600; color: #1a2332; text-align: left; white-space: normal; word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; line-height: 1.4; width: 100%; }
+        .vendors .vendor-col { background: white; padding: 12px; display: flex; flex-direction: column; gap: 1px; border-right: 1px solid #e5e7eb; transition: all 0.3s ease; }
+        .vendors .vendor-col:last-child { border-right: none; }
+        .vendors .vendor-col.cheapest-vendor { background: #f0fdf4; border: 3px solid #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1); }
+        .vendors .vendor-col .input-group { min-height: 50px; display: flex; flex-direction: column; justify-content: center; padding: 0; }
+        .vendors input, .vendors select { width: 100%; padding: 8px 12px; font-size: 0.875rem; border-radius: 6px; }
+        .vendors input[readonly] { background-color: #f3f4f6; color: #6b7280; cursor: not-allowed; }
+        .vendor-results-container { display: flex; flex-direction: column; gap: 1px; width: 100%; }
+        .vendor-results-container .duty-result { background: #fef3f0; padding: 12px; border-radius: 6px; text-align: center; min-height: 60px; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; color: #1a2332; border: 1px solid #fed7cc; }
+        .vendor-results-container .total-duty-rate, .vendor-results-container .total-duty-amount { background: #ff6600; color: white; font-weight: 600; border: 1px solid #ff6600; }
+        .vendor-results-container .total-cost-result { font-weight: 700; font-size: 1.1rem; border: 2px solid; }
+        .duty-labels-container { display: flex; flex-direction: column; gap: 1px; width: 100%; }
+        .duty-labels-container .input-group { min-height: 60px; display: flex; align-items: center; background: #fff9e6; padding: 10px; border-radius: 4px; }
+        .duty-labels-container .input-group label { margin: 0; font-size: 0.875rem; text-align: left; white-space: normal; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.4; width: 100%; }
+        .duty-labels-container .total-cost-label { background: #fff3cd; font-weight: 700; }
+        .duty-labels-container .total-cost-label label { font-size: 1rem; font-weight: 700; }
+        .loading { padding: 20px; text-align: center; font-size: 1rem; color: #ff6600; font-weight: 600; }
+        .error { color: #dc2626; font-weight: 600; text-align: center; padding: 10px; background: #fef2f2; border-radius: 6px; border: 1px solid #fecaca; }
+        .button-group { display: flex; justify-content: center; gap: 16px; margin: 32px 0 24px; }
+        button { padding: 14px 32px; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.2s ease; font-family: inherit; letter-spacing: 0.02em; }
+        button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+        button:active { transform: translateY(0); }
+        .run-btn { background: linear-gradient(135deg, #006B7D 0%, #008B9F 100%); color: white; box-shadow: 0 2px 8px rgba(0, 107, 125, 0.2); }
+        .run-btn:disabled { background: #d1d5db; cursor: not-allowed; box-shadow: none; transform: none; }
+        .save-btn { background: #ff6600; color: white; box-shadow: 0 2px 8px rgba(255, 102, 0, 0.2); }
+        .debug-btn { background: white; color: #6b7280; border: 1.5px solid #d1d5db; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); }
+        .debug-btn:hover { background: #f9fafb; border-color: #9ca3af; }
+        .debug { margin-top: 24px; border: 1.5px solid #e5e7eb; padding: 20px; background: #f9fafb; display: none; max-height: 500px; overflow-y: auto; border-radius: 12px; }
+        .debug.active { display: block; }
+        .debug h4 { color: #374151; margin-bottom: 12px; font-size: 1rem; }
+        .debug details { background: white; padding: 16px; margin-bottom: 12px; border-radius: 8px; border: 1px solid #e5e7eb; }
+        .debug summary { cursor: pointer; font-weight: 600; color: #1a2332; padding: 8px; border-radius: 4px; transition: background 0.2s; }
+        .debug summary:hover { background: #f3f4f6; }
+        .debug h5 { color: #6b7280; margin: 16px 0 8px; font-size: 0.875rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        pre { white-space: pre-wrap; font-size: 0.8rem; background: #1a2332; color: #10b981; padding: 16px; border-radius: 6px; overflow-x: auto; font-family: 'Monaco', 'Menlo', monospace; }
+        #hs_code { background-color: #f0f9ff; border-color: #93c5fd; }
+        .footer { text-align: center; padding: 24px; color: #9ca3af; font-size: 0.875rem; background: white; border-top: 1px solid #e5e7eb; }
+        @media (max-width: 1200px) { .header { grid-template-columns: repeat(3, 1fr); } .vendors { grid-template-columns: 200px repeat(3, 1fr); } }
+        @media (max-width: 768px) { .header { grid-template-columns: 1fr; } .order-details { flex-direction: column; align-items: flex-start; } .order-details .input-group input[type="number"] { max-width: 100%; } .vendors { grid-template-columns: 200px 1fr; overflow-x: auto; } .app-header { padding: 24px 20px; } .main-content { padding: 16px 20px; } }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Avalara Style Header -->
         <div class="app-header">
             <h1>Avalara Tariff Modeling</h1>
             <p>Calculate customs duties and fees for your international shipments</p>
         </div>
-
         <div class="main-content">
             <form method="POST" id="mainForm" onsubmit="return validateForm(event)">
-                <!-- Product & Import Details -->
                 <div class="form-section">
                     <h2>Product & Import Details</h2>
                     <div class="header">
-                        <div class="input-group">
-                            <label>Ship Date <span class="required">*</span></label>
-                            <input type="date" name="import_date" id="import_date" value="{{ form_data.get('import_date', '') }}" required>
-                        </div>
-                        <div class="input-group">
-                            <label>Destination <span class="required">*</span></label>
-                            <select name="import_country" required>
-                                {% for country in countries %}
-                                <option value="{{ country.code }}" {% if country.code == form_data.get('import_country', 'US') %}selected{% endif %}>{{ country.flag }} {{ country.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label>Part # / SKU</label>
-                            <input type="text" name="part_sku" value="{{ form_data.get('part_sku', '') }}" placeholder="Enter SKU">
-                        </div>
-                        <div class="input-group">
-                            <label>Product Description <span class="required">*</span></label>
-                            <input type="text" name="description" id="description" value="{{ form_data.get('description', '') }}" required placeholder="Enter description">
-                        </div>
-                        <div class="input-group">
-                            <label>Tariff Code <span class="required">*</span></label>
-                            <input type="text" name="hs_code" id="hs_code" value="{{ form_data.get('hs_code', '') }}" placeholder="e.g., 6307909891" maxlength="10" required>
-                        </div>
+                        <div class="input-group"><label>Ship Date <span class="required">*</span></label><input type="date" name="import_date" id="import_date" value="" required></div>
+                        <div class="input-group"><label>Destination <span class="required">*</span></label><select name="import_country" required><option value="US" selected>🇺🇸 United States</option><option value="AT">🇦🇹 Austria</option><option value="AU">🇦🇺 Australia</option><option value="BE">🇧🇪 Belgium</option><option value="BR">🇧🇷 Brazil</option><option value="CA">🇨🇦 Canada</option><option value="CN">🇨🇳 China</option><option value="CZ">🇨🇿 Czech Republic</option><option value="DE">🇩🇪 Germany</option><option value="DK">🇩🇰 Denmark</option><option value="ES">🇪🇸 Spain</option><option value="FI">🇫🇮 Finland</option><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option><option value="GR">🇬🇷 Greece</option><option value="HK">🇭🇰 Hong Kong</option><option value="ID">🇮🇩 Indonesia</option><option value="IE">🇮🇪 Ireland</option><option value="IN">🇮🇳 India</option><option value="IT">🇮🇹 Italy</option><option value="JP">🇯🇵 Japan</option><option value="KR">🇰🇷 South Korea</option><option value="MX">🇲🇽 Mexico</option><option value="MY">🇲🇾 Malaysia</option><option value="NL">🇳🇱 Netherlands</option><option value="NO">🇳🇴 Norway</option><option value="PH">🇵🇭 Philippines</option><option value="PL">🇵🇱 Poland</option><option value="PT">🇵🇹 Portugal</option><option value="RU">🇷🇺 Russia</option><option value="SE">🇸🇪 Sweden</option><option value="SG">🇸🇬 Singapore</option><option value="TH">🇹🇭 Thailand</option><option value="TR">🇹🇷 Turkey</option><option value="VN">🇻🇳 Vietnam</option></select></div>
+                        <div class="input-group"><label>Part # / SKU</label><input type="text" name="part_sku" value="" placeholder="Enter SKU"></div>
+                        <div class="input-group"><label>Product Description <span class="required">*</span></label><input type="text" name="description" id="description" value="" required placeholder="Enter description"></div>
+                        <div class="input-group"><label>Tariff Code <span class="required">*</span></label><input type="text" name="hs_code" id="hs_code" value="" placeholder="e.g., 6307909891" maxlength="10" required></div>
                     </div>
                 </div>
-
-                <!-- Order Details -->
                 <div class="form-section">
                     <h2>Order Details</h2>
                     <div class="order-details">
-                        <div class="input-group">
-                            <label>Order Quantity <span class="required">*</span></label>
-                            <input type="number" name="order_qty" value="{{ form_data.get('order_qty', '') }}" min="1" required placeholder="Enter quantity">
-                        </div>
-                        <div class="checkbox-group">
-                            <input type="checkbox" name="spi_applicable" id="spi_applicable" {% if form_data.get('spi_applicable') == 'on' %}checked{% endif %}>
-                            <label for="spi_applicable">SPI Applicable</label>
-                        </div>
+                        <div class="input-group"><label>Order Quantity <span class="required">*</span></label><input type="number" name="order_qty" value="" min="1" required placeholder="Enter quantity"></div>
+                        <div class="checkbox-group"><input type="checkbox" name="spi_applicable" id="spi_applicable"><label for="spi_applicable">SPI Applicable</label></div>
                     </div>
                 </div>
-
-                <!-- Vendors Section -->
                 <div class="form-section">
                     <h2>Vendor Comparison</h2>
                     <div class="vendors">
@@ -560,478 +107,51 @@
                             <div class="input-group"><label>Quantity</label></div>
                             <div class="duty-labels-container"></div>
                         </div>
-                        {% for vendor in vendors_form %}
-                        <div class="vendor-col" data-vendor-id="{{ vendor.id }}">
-                            <div class="input-group">
-                                <input type="text" name="vendor_name_{{ vendor.id }}" value="{{ vendor.name }}" placeholder="Vendor {{ vendor.id }}">
-                            </div>
-                            <div class="input-group">
-                                <select name="vendor_country_{{ vendor.id }}">
-                                    <option value="">Select</option>
-                                    {% for country in countries %}
-                                    <option value="{{ country.code }}" {% if country.code == vendor.country %}selected{% endif %}>{{ country.flag }} {{ country.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="input-group">
-                                <select name="vendor_coo_{{ vendor.id }}">
-                                    <option value="">Select</option>
-                                    {% for country in countries %}
-                                    <option value="{{ country.code }}" {% if country.code == vendor.coo %}selected{% endif %}>{{ country.flag }} {{ country.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="input-group">
-                                <input type="number" step="0.01" name="vendor_cost_{{ vendor.id }}" value="{{ vendor.cost }}" min="0.01" placeholder="0.00">
-                            </div>
-                            <div class="input-group">
-                                <input type="number" name="vendor_quantity_{{ vendor.id }}" value="{{ vendor.quantity or form_data.get('order_qty', '') }}" min="1" readonly>
-                            </div>
-                            <div class="vendor-results-container"></div>
-                        </div>
-                        {% endfor %}
+                        <div class="vendor-col" data-vendor-id="1"><div class="input-group"><input type="text" name="vendor_name_1" placeholder="Vendor 1"></div><div class="input-group"><select name="vendor_country_1"><option value="">Select</option><option value="AT">🇦🇹 Austria</option><option value="AU">🇦🇺 Australia</option><option value="BE">🇧🇪 Belgium</option><option value="BR">🇧🇷 Brazil</option><option value="CA">🇨🇦 Canada</option><option value="CN">🇨🇳 China</option><option value="CZ">🇨🇿 Czech Republic</option><option value="DE">🇩🇪 Germany</option><option value="DK">🇩🇰 Denmark</option><option value="ES">🇪🇸 Spain</option><option value="FI">🇫🇮 Finland</option><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option><option value="GR">🇬🇷 Greece</option><option value="HK">🇭🇰 Hong Kong</option><option value="ID">🇮🇩 Indonesia</option><option value="IE">🇮🇪 Ireland</option><option value="IN">🇮🇳 India</option><option value="IT">🇮🇹 Italy</option><option value="JP">🇯🇵 Japan</option><option value="KR">🇰🇷 South Korea</option><option value="MX">🇲🇽 Mexico</option><option value="MY">🇲🇾 Malaysia</option><option value="NL">🇳🇱 Netherlands</option><option value="NO">🇳🇴 Norway</option><option value="PH">🇵🇭 Philippines</option><option value="PL">🇵🇱 Poland</option><option value="PT">🇵🇹 Portugal</option><option value="RU">🇷🇺 Russia</option><option value="SE">🇸🇪 Sweden</option><option value="SG">🇸🇬 Singapore</option><option value="TH">🇹🇭 Thailand</option><option value="TR">🇹🇷 Turkey</option><option value="US">🇺🇸 United States</option><option value="VN">🇻🇳 Vietnam</option></select></div><div class="input-group"><select name="vendor_coo_1"><option value="">Select</option><option value="AT">🇦🇹 Austria</option><option value="AU">🇦🇺 Australia</option><option value="BE">🇧🇪 Belgium</option><option value="BR">🇧🇷 Brazil</option><option value="CA">🇨🇦 Canada</option><option value="CN">🇨🇳 China</option><option value="CZ">🇨🇿 Czech Republic</option><option value="DE">🇩🇪 Germany</option><option value="DK">🇩🇰 Denmark</option><option value="ES">🇪🇸 Spain</option><option value="FI">🇫🇮 Finland</option><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option><option value="GR">🇬🇷 Greece</option><option value="HK">🇭🇰 Hong Kong</option><option value="ID">🇮🇩 Indonesia</option><option value="IE">🇮🇪 Ireland</option><option value="IN">🇮🇳 India</option><option value="IT">🇮🇹 Italy</option><option value="JP">🇯🇵 Japan</option><option value="KR">🇰🇷 South Korea</option><option value="MX">🇲🇽 Mexico</option><option value="MY">🇲🇾 Malaysia</option><option value="NL">🇳🇱 Netherlands</option><option value="NO">🇳🇴 Norway</option><option value="PH">🇵🇭 Philippines</option><option value="PL">🇵🇱 Poland</option><option value="PT">🇵🇹 Portugal</option><option value="RU">🇷🇺 Russia</option><option value="SE">🇸🇪 Sweden</option><option value="SG">🇸🇬 Singapore</option><option value="TH">🇹🇭 Thailand</option><option value="TR">🇹🇷 Turkey</option><option value="US">🇺🇸 United States</option><option value="VN">🇻🇳 Vietnam</option></select></div><div class="input-group"><input type="number" step="0.01" name="vendor_cost_1" min="0.01" placeholder="0.00"></div><div class="input-group"><input type="number" name="vendor_quantity_1" min="1" readonly></div><div class="vendor-results-container"></div></div>
+                        <div class="vendor-col" data-vendor-id="2"><div class="input-group"><input type="text" name="vendor_name_2" placeholder="Vendor 2"></div><div class="input-group"><select name="vendor_country_2"><option value="">Select</option><option value="AT">🇦🇹 Austria</option><option value="AU">🇦🇺 Australia</option><option value="BE">🇧🇪 Belgium</option><option value="BR">🇧🇷 Brazil</option><option value="CA">🇨🇦 Canada</option><option value="CN">🇨🇳 China</option><option value="CZ">🇨🇿 Czech Republic</option><option value="DE">🇩🇪 Germany</option><option value="DK">🇩🇰 Denmark</option><option value="ES">🇪🇸 Spain</option><option value="FI">🇫🇮 Finland</option><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option><option value="GR">🇬🇷 Greece</option><option value="HK">🇭🇰 Hong Kong</option><option value="ID">🇮🇩 Indonesia</option><option value="IE">🇮🇪 Ireland</option><option value="IN">🇮🇳 India</option><option value="IT">🇮🇹 Italy</option><option value="JP">🇯🇵 Japan</option><option value="KR">🇰🇷 South Korea</option><option value="MX">🇲🇽 Mexico</option><option value="MY">🇲🇾 Malaysia</option><option value="NL">🇳🇱 Netherlands</option><option value="NO">🇳🇴 Norway</option><option value="PH">🇵🇭 Philippines</option><option value="PL">🇵🇱 Poland</option><option value="PT">🇵🇹 Portugal</option><option value="RU">🇷🇺 Russia</option><option value="SE">🇸🇪 Sweden</option><option value="SG">🇸🇬 Singapore</option><option value="TH">🇹🇭 Thailand</option><option value="TR">🇹🇷 Turkey</option><option value="US">🇺🇸 United States</option><option value="VN">🇻🇳 Vietnam</option></select></div><div class="input-group"><select name="vendor_coo_2"><option value="">Select</option><option value="AT">🇦🇹 Austria</option><option value="AU">🇦🇺 Australia</option><option value="BE">🇧🇪 Belgium</option><option value="BR">🇧🇷 Brazil</option><option value="CA">🇨🇦 Canada</option><option value="CN">🇨🇳 China</option><option value="CZ">🇨🇿 Czech Republic</option><option value="DE">🇩🇪 Germany</option><option value="DK">🇩🇰 Denmark</option><option value="ES">🇪🇸 Spain</option><option value="FI">🇫🇮 Finland</option><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option><option value="GR">🇬🇷 Greece</option><option value="HK">🇭🇰 Hong Kong</option><option value="ID">🇮🇩 Indonesia</option><option value="IE">🇮🇪 Ireland</option><option value="IN">🇮🇳 India</option><option value="IT">🇮🇹 Italy</option><option value="JP">🇯🇵 Japan</option><option value="KR">🇰🇷 South Korea</option><option value="MX">🇲🇽 Mexico</option><option value="MY">🇲🇾 Malaysia</option><option value="NL">🇳🇱 Netherlands</option><option value="NO">🇳🇴 Norway</option><option value="PH">🇵🇭 Philippines</option><option value="PL">🇵🇱 Poland</option><option value="PT">🇵🇹 Portugal</option><option value="RU">🇷🇺 Russia</option><option value="SE">🇸🇪 Sweden</option><option value="SG">🇸🇬 Singapore</option><option value="TH">🇹🇭 Thailand</option><option value="TR">🇹🇷 Turkey</option><option value="US">🇺🇸 United States</option><option value="VN">🇻🇳 Vietnam</option></select></div><div class="input-group"><input type="number" step="0.01" name="vendor_cost_2" min="0.01" placeholder="0.00"></div><div class="input-group"><input type="number" name="vendor_quantity_2" min="1" readonly></div><div class="vendor-results-container"></div></div>
+                        <div class="vendor-col" data-vendor-id="3"><div class="input-group"><input type="text" name="vendor_name_3" placeholder="Vendor 3"></div><div class="input-group"><select name="vendor_country_3"><option value="">Select</option><option value="AT">🇦🇹 Austria</option><option value="AU">🇦🇺 Australia</option><option value="BE">🇧🇪 Belgium</option><option value="BR">🇧🇷 Brazil</option><option value="CA">🇨🇦 Canada</option><option value="CN">🇨🇳 China</option><option value="CZ">🇨🇿 Czech Republic</option><option value="DE">🇩🇪 Germany</option><option value="DK">🇩🇰 Denmark</option><option value="ES">🇪🇸 Spain</option><option value="FI">🇫🇮 Finland</option><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option><option value="GR">🇬🇷 Greece</option><option value="HK">🇭🇰 Hong Kong</option><option value="ID">🇮🇩 Indonesia</option><option value="IE">🇮🇪 Ireland</option><option value="IN">🇮🇳 India</option><option value="IT">🇮🇹 Italy</option><option value="JP">🇯🇵 Japan</option><option value="KR">🇰🇷 South Korea</option><option value="MX">🇲🇽 Mexico</option><option value="MY">🇲🇾 Malaysia</option><option value="NL">🇳🇱 Netherlands</option><option value="NO">🇳🇴 Norway</option><option value="PH">🇵🇭 Philippines</option><option value="PL">🇵🇱 Poland</option><option value="PT">🇵🇹 Portugal</option><option value="RU">🇷🇺 Russia</option><option value="SE">🇸🇪 Sweden</option><option value="SG">🇸🇬 Singapore</option><option value="TH">🇹🇭 Thailand</option><option value="TR">🇹🇷 Turkey</option><option value="US">🇺🇸 United States</option><option value="VN">🇻🇳 Vietnam</option></select></div><div class="input-group"><select name="vendor_coo_3"><option value="">Select</option><option value="AT">🇦🇹 Austria</option><option value="AU">🇦🇺 Australia</option><option value="BE">🇧🇪 Belgium</option><option value="BR">🇧🇷 Brazil</option><option value="CA">🇨🇦 Canada</option><option value="CN">🇨🇳 China</option><option value="CZ">🇨🇿 Czech Republic</option><option value="DE">🇩🇪 Germany</option><option value="DK">🇩🇰 Denmark</option><option value="ES">🇪🇸 Spain</option><option value="FI">🇫🇮 Finland</option><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option><option value="GR">🇬🇷 Greece</option><option value="HK">🇭🇰 Hong Kong</option><option value="ID">🇮🇩 Indonesia</option><option value="IE">🇮🇪 Ireland</option><option value="IN">🇮🇳 India</option><option value="IT">🇮🇹 Italy</option><option value="JP">🇯🇵 Japan</option><option value="KR">🇰🇷 South Korea</option><option value="MX">🇲🇽 Mexico</option><option value="MY">🇲🇾 Malaysia</option><option value="NL">🇳🇱 Netherlands</option><option value="NO">🇳🇴 Norway</option><option value="PH">🇵🇭 Philippines</option><option value="PL">🇵🇱 Poland</option><option value="PT">🇵🇹 Portugal</option><option value="RU">🇷🇺 Russia</option><option value="SE">🇸🇪 Sweden</option><option value="SG">🇸🇬 Singapore</option><option value="TH">🇹🇭 Thailand</option><option value="TR">🇹🇷 Turkey</option><option value="US">🇺🇸 United States</option><option value="VN">🇻🇳 Vietnam</option></select></div><div class="input-group"><input type="number" step="0.01" name="vendor_cost_3" min="0.01" placeholder="0.00"></div><div class="input-group"><input type="number" name="vendor_quantity_3" min="1" readonly></div><div class="vendor-results-container"></div></div>
+                        <div class="vendor-col" data-vendor-id="4"><div class="input-group"><input type="text" name="vendor_name_4" placeholder="Vendor 4"></div><div class="input-group"><select name="vendor_country_4"><option value="">Select</option><option value="AT">🇦🇹 Austria</option><option value="AU">🇦🇺 Australia</option><option value="BE">🇧🇪 Belgium</option><option value="BR">🇧🇷 Brazil</option><option value="CA">🇨🇦 Canada</option><option value="CN">🇨🇳 China</option><option value="CZ">🇨🇿 Czech Republic</option><option value="DE">🇩🇪 Germany</option><option value="DK">🇩🇰 Denmark</option><option value="ES">🇪🇸 Spain</option><option value="FI">🇫🇮 Finland</option><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option><option value="GR">🇬🇷 Greece</option><option value="HK">🇭🇰 Hong Kong</option><option value="ID">🇮🇩 Indonesia</option><option value="IE">🇮🇪 Ireland</option><option value="IN">🇮🇳 India</option><option value="IT">🇮🇹 Italy</option><option value="JP">🇯🇵 Japan</option><option value="KR">🇰🇷 South Korea</option><option value="MX">🇲🇽 Mexico</option><option value="MY">🇲🇾 Malaysia</option><option value="NL">🇳🇱 Netherlands</option><option value="NO">🇳🇴 Norway</option><option value="PH">🇵🇭 Philippines</option><option value="PL">🇵🇱 Poland</option><option value="PT">🇵🇹 Portugal</option><option value="RU">🇷🇺 Russia</option><option value="SE">🇸🇪 Sweden</option><option value="SG">🇸🇬 Singapore</option><option value="TH">🇹🇭 Thailand</option><option value="TR">🇹🇷 Turkey</option><option value="US">🇺🇸 United States</option><option value="VN">🇻🇳 Vietnam</option></select></div><div class="input-group"><select name="vendor_coo_4"><option value="">Select</option><option value="AT">🇦🇹 Austria</option><option value="AU">🇦🇺 Australia</option><option value="BE">🇧🇪 Belgium</option><option value="BR">🇧🇷 Brazil</option><option value="CA">🇨🇦 Canada</option><option value="CN">🇨🇳 China</option><option value="CZ">🇨🇿 Czech Republic</option><option value="DE">🇩🇪 Germany</option><option value="DK">🇩🇰 Denmark</option><option value="ES">🇪🇸 Spain</option><option value="FI">🇫🇮 Finland</option><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option><option value="GR">🇬🇷 Greece</option><option value="HK">🇭🇰 Hong Kong</option><option value="ID">🇮🇩 Indonesia</option><option value="IE">🇮🇪 Ireland</option><option value="IN">🇮🇳 India</option><option value="IT">🇮🇹 Italy</option><option value="JP">🇯🇵 Japan</option><option value="KR">🇰🇷 South Korea</option><option value="MX">🇲🇽 Mexico</option><option value="MY">🇲🇾 Malaysia</option><option value="NL">🇳🇱 Netherlands</option><option value="NO">🇳🇴 Norway</option><option value="PH">🇵🇭 Philippines</option><option value="PL">🇵🇱 Poland</option><option value="PT">🇵🇹 Portugal</option><option value="RU">🇷🇺 Russia</option><option value="SE">🇸🇪 Sweden</option><option value="SG">🇸🇬 Singapore</option><option value="TH">🇹🇭 Thailand</option><option value="TR">🇹🇷 Turkey</option><option value="US">🇺🇸 United States</option><option value="VN">🇻🇳 Vietnam</option></select></div><div class="input-group"><input type="number" step="0.01" name="vendor_cost_4" min="0.01" placeholder="0.00"></div><div class="input-group"><input type="number" name="vendor_quantity_4" min="1" readonly></div><div class="vendor-results-container"></div></div>
+                        <div class="vendor-col" data-vendor-id="5"><div class="input-group"><input type="text" name="vendor_name_5" placeholder="Vendor 5"></div><div class="input-group"><select name="vendor_country_5"><option value="">Select</option><option value="AT">🇦🇹 Austria</option><option value="AU">🇦🇺 Australia</option><option value="BE">🇧🇪 Belgium</option><option value="BR">🇧🇷 Brazil</option><option value="CA">🇨🇦 Canada</option><option value="CN">🇨🇳 China</option><option value="CZ">🇨🇿 Czech Republic</option><option value="DE">🇩🇪 Germany</option><option value="DK">🇩🇰 Denmark</option><option value="ES">🇪🇸 Spain</option><option value="FI">🇫🇮 Finland</option><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option><option value="GR">🇬🇷 Greece</option><option value="HK">🇭🇰 Hong Kong</option><option value="ID">🇮🇩 Indonesia</option><option value="IE">🇮🇪 Ireland</option><option value="IN">🇮🇳 India</option><option value="IT">🇮🇹 Italy</option><option value="JP">🇯🇵 Japan</option><option value="KR">🇰🇷 South Korea</option><option value="MX">🇲🇽 Mexico</option><option value="MY">🇲🇾 Malaysia</option><option value="NL">🇳🇱 Netherlands</option><option value="NO">🇳🇴 Norway</option><option value="PH">🇵🇭 Philippines</option><option value="PL">🇵🇱 Poland</option><option value="PT">🇵🇹 Portugal</option><option value="RU">🇷🇺 Russia</option><option value="SE">🇸🇪 Sweden</option><option value="SG">🇸🇬 Singapore</option><option value="TH">🇹🇭 Thailand</option><option value="TR">🇹🇷 Turkey</option><option value="US">🇺🇸 United States</option><option value="VN">🇻🇳 Vietnam</option></select></div><div class="input-group"><select name="vendor_coo_5"><option value="">Select</option><option value="AT">🇦🇹 Austria</option><option value="AU">🇦🇺 Australia</option><option value="BE">🇧🇪 Belgium</option><option value="BR">🇧🇷 Brazil</option><option value="CA">🇨🇦 Canada</option><option value="CN">🇨🇳 China</option><option value="CZ">🇨🇿 Czech Republic</option><option value="DE">🇩🇪 Germany</option><option value="DK">🇩🇰 Denmark</option><option value="ES">🇪🇸 Spain</option><option value="FI">🇫🇮 Finland</option><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option><option value="GR">🇬🇷 Greece</option><option value="HK">🇭🇰 Hong Kong</option><option value="ID">🇮🇩 Indonesia</option><option value="IE">🇮🇪 Ireland</option><option value="IN">🇮🇳 India</option><option value="IT">🇮🇹 Italy</option><option value="JP">🇯🇵 Japan</option><option value="KR">🇰🇷 South Korea</option><option value="MX">🇲🇽 Mexico</option><option value="MY">🇲🇾 Malaysia</option><option value="NL">🇳🇱 Netherlands</option><option value="NO">🇳🇴 Norway</option><option value="PH">🇵🇭 Philippines</option><option value="PL">🇵🇱 Poland</option><option value="PT">🇵🇹 Portugal</option><option value="RU">🇷🇺 Russia</option><option value="SE">🇸🇪 Sweden</option><option value="SG">🇸🇬 Singapore</option><option value="TH">🇹🇭 Thailand</option><option value="TR">🇹🇷 Turkey</option><option value="US">🇺🇸 United States</option><option value="VN">🇻🇳 Vietnam</option></select></div><div class="input-group"><input type="number" step="0.01" name="vendor_cost_5" min="0.01" placeholder="0.00"></div><div class="input-group"><input type="number" name="vendor_quantity_5" min="1" readonly></div><div class="vendor-results-container"></div></div>
+                        <div class="vendor-col" data-vendor-id="6"><div class="input-group"><input type="text" name="vendor_name_6" placeholder="Vendor 6"></div><div class="input-group"><select name="vendor_country_6"><option value="">Select</option><option value="AT">🇦🇹 Austria</option><option value="AU">🇦🇺 Australia</option><option value="BE">🇧🇪 Belgium</option><option value="BR">🇧🇷 Brazil</option><option value="CA">🇨🇦 Canada</option><option value="CN">🇨🇳 China</option><option value="CZ">🇨🇿 Czech Republic</option><option value="DE">🇩🇪 Germany</option><option value="DK">🇩🇰 Denmark</option><option value="ES">🇪🇸 Spain</option><option value="FI">🇫🇮 Finland</option><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option><option value="GR">🇬🇷 Greece</option><option value="HK">🇭🇰 Hong Kong</option><option value="ID">🇮🇩 Indonesia</option><option value="IE">🇮🇪 Ireland</option><option value="IN">🇮🇳 India</option><option value="IT">🇮🇹 Italy</option><option value="JP">🇯🇵 Japan</option><option value="KR">🇰🇷 South Korea</option><option value="MX">🇲🇽 Mexico</option><option value="MY">🇲🇾 Malaysia</option><option value="NL">🇳🇱 Netherlands</option><option value="NO">🇳🇴 Norway</option><option value="PH">🇵🇭 Philippines</option><option value="PL">🇵🇱 Poland</option><option value="PT">🇵🇹 Portugal</option><option value="RU">🇷🇺 Russia</option><option value="SE">🇸🇪 Sweden</option><option value="SG">🇸🇬 Singapore</option><option value="TH">🇹🇭 Thailand</option><option value="TR">🇹🇷 Turkey</option><option value="US">🇺🇸 United States</option><option value="VN">🇻🇳 Vietnam</option></select></div><div class="input-group"><select name="vendor_coo_6"><option value="">Select</option><option value="AT">🇦🇹 Austria</option><option value="AU">🇦🇺 Australia</option><option value="BE">🇧🇪 Belgium</option><option value="BR">🇧🇷 Brazil</option><option value="CA">🇨🇦 Canada</option><option value="CN">🇨🇳 China</option><option value="CZ">🇨🇿 Czech Republic</option><option value="DE">🇩🇪 Germany</option><option value="DK">🇩🇰 Denmark</option><option value="ES">🇪🇸 Spain</option><option value="FI">🇫🇮 Finland</option><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option><option value="GR">🇬🇷 Greece</option><option value="HK">🇭🇰 Hong Kong</option><option value="ID">🇮🇩 Indonesia</option><option value="IE">🇮🇪 Ireland</option><option value="IN">🇮🇳 India</option><option value="IT">🇮🇹 Italy</option><option value="JP">🇯🇵 Japan</option><option value="KR">🇰🇷 South Korea</option><option value="MX">🇲🇽 Mexico</option><option value="MY">🇲🇾 Malaysia</option><option value="NL">🇳🇱 Netherlands</option><option value="NO">🇳🇴 Norway</option><option value="PH">🇵🇭 Philippines</option><option value="PL">🇵🇱 Poland</option><option value="PT">🇵🇹 Portugal</option><option value="RU">🇷🇺 Russia</option><option value="SE">🇸🇪 Sweden</option><option value="SG">🇸🇬 Singapore</option><option value="TH">🇹🇭 Thailand</option><option value="TR">🇹🇷 Turkey</option><option value="US">🇺🇸 United States</option><option value="VN">🇻🇳 Vietnam</option></select></div><div class="input-group"><input type="number" step="0.01" name="vendor_cost_6" min="0.01" placeholder="0.00"></div><div class="input-group"><input type="number" name="vendor_quantity_6" min="1" readonly></div><div class="vendor-results-container"></div></div>
                     </div>
                 </div>
-
-                <!-- Action Buttons -->
                 <div class="button-group">
                     <button type="submit" name="action" value="run" id="run-btn" class="run-btn" disabled>Calculate duties</button>
                     <button type="button" name="action" value="save" class="save-btn" onclick="exportToExcel()">Save Results</button>
                 </div>
             </form>
-
-            {% if error %}
-            <div class="error">{{ error }}</div>
-            {% endif %}
-
-            <!-- Debug Section -->
-            <div style="text-align: center; margin-top: 24px;">
-                <button class="debug-btn" onclick="toggleDebug()">Toggle API Debug Responses</button>
-            </div>
-            <div id="debug" class="debug">
-                {% if debug_infos %}
-                <h4>GetQuote API Responses:</h4>
-                {% for debug_info in debug_infos %}
-                <details open>
-                    <summary>GetQuote Debug {{ loop.index }} (Click to collapse)</summary>
-                    <pre>{{ debug_info | safe }}</pre>
-                </details>
-                {% endfor %}
-                {% endif %}
-                <h4 id="hs-debug-header" style="display: none;">HS Classification Response:</h4>
-                <pre id="hs-debug-content" style="display: none;"></pre>
-                {% if not debug_infos %}
-                <p>No debug info available yet. Enter a description to see HS classification.</p>
-                {% endif %}
-            </div>
+            <div style="text-align: center; margin-top: 24px;"><button class="debug-btn" onclick="toggleDebug()">Toggle API Debug Responses</button></div>
+            <div id="debug" class="debug"><h4 id="hs-debug-header" style="display: none;">HS Classification Response:</h4><pre id="hs-debug-content" style="display: none;"></pre><div id="vendor-debug-content"></div></div>
         </div>
-
-        <!-- Footer -->
-        <div class="footer">
-            © Avalara, Inc. 2025
-        </div>
+        <div class="footer">© Avalara, Inc. 2025</div>
     </div>
-
     <script>
-        // Global variable to store calculation results for Excel export
-        let calculationResults = {
-            formData: {},
-            vendors: []
-        };
+let calculationResults={formData:{},vendors:[]};
+document.addEventListener('DOMContentLoaded',function(){const i=document.getElementById('import_date');if(!i.value){const t=new Date();i.value=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`}});
+function toggleDebug(){document.getElementById('debug').classList.toggle('active')}
+let timeout;
+document.getElementById('description').addEventListener('input',function(){clearTimeout(timeout);timeout=setTimeout(()=>{const d=this.value.trim();if(d&&d.length>5){fetch('/classify_hs',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({description:d})}).then(r=>r.json()).then(data=>{console.log('HS Response:',data);if(data.hs_code&&data.hs_code!=='Error'&&data.hs_code.length>=6){const h=document.getElementById('hs_code');h.value=data.hs_code;h.style.backgroundColor='#d1fae5';h.style.borderColor='#10b981';validateForm()}const debugDiv=document.getElementById('debug');const header=document.getElementById('hs-debug-header');const content=document.getElementById('hs-debug-content');header.style.display='block';content.style.display='block';content.textContent=JSON.stringify(data,null,2);debugDiv.classList.add('active')}).catch(err=>console.error('HS Error:',err))}},1000)});
+function validateForm(event){if(event)event.preventDefault();const hs=document.getElementById('hs_code').value;if(!hs){document.getElementById('run-btn').disabled=true;return false}const vendors=document.querySelectorAll('.vendor-col');let hasValid=false;vendors.forEach(v=>{const id=v.dataset.vendorId;const country=v.querySelector(`select[name="vendor_country_${id}"]`).value;const coo=v.querySelector(`select[name="vendor_coo_${id}"]`).value;const cost=v.querySelector(`input[name="vendor_cost_${id}"]`).value;if(country&&coo&&cost&&parseFloat(cost)>0)hasValid=true});document.getElementById('run-btn').disabled=!hasValid;return hasValid}
+document.getElementById('mainForm').addEventListener('input',validateForm);
+document.getElementById('mainForm').addEventListener('change',validateForm);
+document.getElementById('mainForm').addEventListener('submit',async function(event){event.preventDefault();if(!validateForm())return;const formData=new FormData(this);const vendors=document.querySelectorAll('.vendor-col');calculationResults.formData={import_date:formData.get('import_date'),import_country:formData.get('import_country'),part_sku:formData.get('part_sku'),description:formData.get('description'),hs_code:formData.get('hs_code'),order_qty:formData.get('order_qty'),spi_applicable:formData.get('spi_applicable')==='on'};calculationResults.vendors=[];const debugDiv=document.getElementById('debug');let debugContent=document.getElementById('vendor-debug-content');if(!debugContent){debugContent=document.createElement('div');debugContent.id='vendor-debug-content';debugDiv.appendChild(debugContent)}let debugResponses=[];let allDutyTypes=new Set();for(let i=0;i<vendors.length;i++){const vendor=vendors[i];const vendorId=vendor.dataset.vendorId;const vendorCountry=vendor.querySelector(`select[name="vendor_country_${vendorId}"]`).value;const coo=vendor.querySelector(`select[name="vendor_coo_${vendorId}"]`).value;const cost=vendor.querySelector(`input[name="vendor_cost_${vendorId}"]`).value;const quantity=vendor.querySelector(`input[name="vendor_quantity_${vendorId}"]`).value;const name=vendor.querySelector(`input[name="vendor_name_${vendorId}"]`).value||`Vendor ${vendorId}`;const resultsContainer=vendor.querySelector('.vendor-results-container');resultsContainer.innerHTML='';if(vendorCountry&&coo&&cost&&parseFloat(cost)>0){resultsContainer.innerHTML='<div class="loading">Calculating...</div>';try{const response=await fetch('/calculate_vendor',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({description:formData.get('description'),hs_code:formData.get('hs_code'),coo:coo,cost:cost,quantity:quantity,import_country:formData.get('import_country'),import_date:formData.get('import_date'),spi_applicable:formData.get('spi_applicable')==='on'})});const result=await response.json();debugResponses.push({vendor:name,vendorId:vendorId,success:result.success,request:result.request_payload,response:result.api_response||result.error_response||result,error:result.error});resultsContainer.innerHTML='';if(result.success&&result.duty_lines){result.duty_lines.forEach(duty=>allDutyTypes.add(duty.description));vendor.dataset.dutyResult=JSON.stringify(result);calculationResults.vendors.push({name:name,vendor_country:vendorCountry,coo:coo,cost:parseFloat(cost),quantity:parseInt(quantity),duty_lines:result.duty_lines,total_duty_rate:result.total_duty_rate,total_duty_amount:result.total_duty_amount});result.duty_lines.forEach(duty=>{const div=document.createElement('div');div.className='input-group duty-result';div.dataset.dutyType=duty.description;div.innerHTML=`<span class="result-value">${duty.rate_percent.toFixed(2)}%</span>`;resultsContainer.appendChild(div)});const rateDiv=document.createElement('div');rateDiv.className='input-group duty-result total-duty-rate';rateDiv.innerHTML=`<span class="result-value"><strong>${result.total_duty_rate}</strong></span>`;resultsContainer.appendChild(rateDiv);const amountDiv=document.createElement('div');amountDiv.className='input-group duty-result total-duty-amount';amountDiv.innerHTML=`<span class="result-value"><strong>$${result.total_duty_amount.toFixed(2)}</strong></span>`;resultsContainer.appendChild(amountDiv)}else{resultsContainer.innerHTML='<div class="error">Calculation failed</div>'}}catch(error){debugResponses.push({vendor:name,vendorId:vendorId,success:false,error:error.message});resultsContainer.innerHTML='<div class="error">Calculation failed</div>'}}}updateDutyLabels(allDutyTypes);alignVendorResults(allDutyTypes);applyColorCodingAndHighlight();if(debugContent&&debugResponses.length>0){debugContent.innerHTML='<h4>Vendor Calculation API Responses:</h4>';debugResponses.forEach(debug=>{const icon=debug.success?'✅':'❌';let html=`<details open><summary>${icon} Vendor ${debug.vendorId}: ${debug.vendor} - ${debug.success?'Success':'Failed'}</summary>`;if(debug.request)html+=`<h5>Request Payload:</h5><pre>${JSON.stringify(debug.request,null,2)}</pre>`;if(!debug.success&&debug.error)html+=`<h5 style="color: red;">Error:</h5><pre style="color: red;">${debug.error}</pre>`;if(debug.response)html+=`<h5>API Response:</h5><pre>${JSON.stringify(debug.response,null,2)}</pre>`;html+='</details>';debugContent.innerHTML+=html});debugDiv.classList.add('active')}});
 
-        // Set Import Date to today's date on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            const importDateInput = document.getElementById('import_date');
-            if (!importDateInput.value) {
-                const today = new Date();
-                const yyyy = today.getFullYear();
-                const mm = String(today.getMonth() + 1).padStart(2, '0');
-                const dd = String(today.getDate()).padStart(2, '0');
-                importDateInput.value = `${yyyy}-${mm}-${dd}`;
-            }
-        });
+function updateDutyLabels(dutyTypes){const labelsContainer=document.querySelector('.duty-labels-container');labelsContainer.innerHTML='';dutyTypes.forEach(dutyType=>{const labelDiv=document.createElement('div');labelDiv.className='input-group';labelDiv.dataset.dutyType=dutyType;labelDiv.innerHTML=`<label>${dutyType}</label>`;labelsContainer.appendChild(labelDiv)});const rateLabel=document.createElement('div');rateLabel.className='input-group';rateLabel.innerHTML='<label><strong>Total Duty Rate</strong></label>';labelsContainer.appendChild(rateLabel);const amountLabel=document.createElement('div');amountLabel.className='input-group';amountLabel.innerHTML='<label><strong>Total Duty ($)</strong></label>';labelsContainer.appendChild(amountLabel);const totalCostLabel=document.createElement('div');totalCostLabel.className='input-group total-cost-label';totalCostLabel.innerHTML='<label><strong>Total Cost ($)</strong></label>';labelsContainer.appendChild(totalCostLabel)}
 
-        function toggleDebug() {
-            const debugDiv = document.getElementById('debug');
-            debugDiv.classList.toggle('active');
-        }
+function alignVendorResults(dutyTypes){const vendors=document.querySelectorAll('.vendor-col');vendors.forEach(vendor=>{const resultsContainer=vendor.querySelector('.vendor-results-container');const resultData=vendor.dataset.dutyResult;if(resultData){const result=JSON.parse(resultData);const vendorDutyMap=new Map();result.duty_lines.forEach(duty=>{vendorDutyMap.set(duty.description,duty)});resultsContainer.innerHTML='';dutyTypes.forEach(dutyType=>{const duty=vendorDutyMap.get(dutyType);const dutyDiv=document.createElement('div');dutyDiv.className='input-group duty-result';dutyDiv.dataset.dutyType=dutyType;if(duty){dutyDiv.innerHTML=`<span class="result-value">${duty.rate_percent.toFixed(2)}%</span>`}else{dutyDiv.innerHTML='<span class="result-value">N/A</span>'}resultsContainer.appendChild(dutyDiv)});const rateDiv=document.createElement('div');rateDiv.className='input-group duty-result total-duty-rate';rateDiv.innerHTML=`<span class="result-value"><strong>${result.total_duty_rate}</strong></span>`;resultsContainer.appendChild(rateDiv);const amountDiv=document.createElement('div');amountDiv.className='input-group duty-result total-duty-amount';amountDiv.innerHTML=`<span class="result-value"><strong>$${result.total_duty_amount.toFixed(2)}</strong></span>`;resultsContainer.appendChild(amountDiv);const vendorId=vendor.dataset.vendorId;const cost=parseFloat(vendor.querySelector(`input[name="vendor_cost_${vendorId}"]`).value)||0;const quantity=parseFloat(vendor.querySelector(`input[name="vendor_quantity_${vendorId}"]`).value)||0;const totalCogs=cost*quantity;const totalCost=totalCogs+result.total_duty_amount;vendor.dataset.totalCost=totalCost;const totalCostDiv=document.createElement('div');totalCostDiv.className='input-group duty-result total-cost-result';totalCostDiv.innerHTML=`<span class="result-value"><strong>$${totalCost.toFixed(2)}</strong></span>`;resultsContainer.appendChild(totalCostDiv)}});syncDutyRowHeights()}
 
-        let timeout;
-        document.getElementById('description').addEventListener('input', function() {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => {
-                const desc = this.value.trim();
-                if (desc && desc.length > 5) {
-                    fetch('/classify_hs', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ description: desc })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log('HS Response:', data);
-                        if (data.hs_code && data.hs_code !== 'Error' && data.hs_code.length >= 6) {
-                            const hsField = document.getElementById('hs_code');
-                            hsField.value = data.hs_code;
-                            hsField.style.backgroundColor = '#d1fae5';
-                            hsField.style.borderColor = '#10b981';
-                            console.log('HS Code populated:', data.hs_code);
-                            validateForm();
-                        } else {
-                            console.warn('No valid HS Code:', data.hs_code);
-                        }
-                        const debugDiv = document.getElementById('debug');
-                        const header = document.getElementById('hs-debug-header');
-                        const content = document.getElementById('hs-debug-content');
-                        header.style.display = 'block';
-                        content.style.display = 'block';
-                        content.textContent = JSON.stringify(data, null, 2);
-                        debugDiv.classList.add('active');
-                    })
-                    .catch(err => console.error('HS Error:', err));
-                }
-            }, 1000);
-        });
+function applyColorCodingAndHighlight(){const vendors=document.querySelectorAll('.vendor-col');const vendorCosts=[];vendors.forEach(vendor=>{if(vendor.dataset.totalCost){vendorCosts.push({vendor:vendor,totalCost:parseFloat(vendor.dataset.totalCost)})}});if(vendorCosts.length===0)return;vendorCosts.sort((a,b)=>a.totalCost-b.totalCost);const minCost=vendorCosts[0].totalCost;const maxCost=vendorCosts[vendorCosts.length-1].totalCost;vendors.forEach(v=>v.classList.remove('cheapest-vendor'));vendorCosts[0].vendor.classList.add('cheapest-vendor');vendorCosts.forEach(({vendor,totalCost})=>{const totalCostDiv=vendor.querySelector('.total-cost-result');if(totalCostDiv){const ratio=vendorCosts.length===1?0:(totalCost-minCost)/(maxCost-minCost);const r=Math.round(255*ratio);const g=Math.round(255*(1-ratio));const b=0;const color=`rgb(${r},${g},${b})`;const brightness=(r*299+g*587+b*114)/1000;const textColor=brightness>128?'#000000':'#ffffff';totalCostDiv.style.backgroundColor=color;totalCostDiv.style.color=textColor;totalCostDiv.style.borderColor=color}})}
 
-        function validateForm(event) {
-            if (event) event.preventDefault();
-            const hsCode = document.getElementById('hs_code').value;
+function syncDutyRowHeights(){setTimeout(()=>{const labelContainer=document.querySelector('.duty-labels-container');const vendorColumns=document.querySelectorAll('.vendor-col');if(!labelContainer)return;const labelRows=labelContainer.querySelectorAll('.input-group');labelRows.forEach((labelRow,index)=>{const matchingResults=[];vendorColumns.forEach(vendorCol=>{const resultsContainer=vendorCol.querySelector('.vendor-results-container');if(resultsContainer){const resultRow=resultsContainer.children[index];if(resultRow)matchingResults.push(resultRow)}});labelRow.style.height='auto';matchingResults.forEach(resultRow=>{resultRow.style.height='auto'});let maxHeight=labelRow.offsetHeight;matchingResults.forEach(resultRow=>{if(resultRow.offsetHeight>maxHeight)maxHeight=resultRow.offsetHeight});labelRow.style.height=`${maxHeight}px`;matchingResults.forEach(resultRow=>{resultRow.style.height=`${maxHeight}px`})})},150)}
 
-            if (!hsCode) {
-                document.getElementById('run-btn').disabled = true;
-                return false;
-            }
+document.querySelectorAll('.vendor-col input, .vendor-col select').forEach(input=>{input.addEventListener('change',function(){const vendor=this.closest('.vendor-col');const resultsContainer=vendor.querySelector('.vendor-results-container');if(resultsContainer)resultsContainer.innerHTML='';vendor.removeAttribute('data-duty-result');vendor.removeAttribute('data-total-cost');vendor.classList.remove('cheapest-vendor');validateForm()})});
 
-            const vendors = document.querySelectorAll('.vendor-col');
-            let hasAtLeastOneCompleteVendor = false;
+document.querySelectorAll('select[name^="vendor_country_"]').forEach(sel=>{sel.addEventListener('change',function(){const id=this.name.match(/\d+/)[0];const cooSel=document.querySelector(`select[name="vendor_coo_${id}"]`);if(cooSel&&this.value)cooSel.value=this.value;validateForm()})});
 
-            vendors.forEach(vendor => {
-                const vendorId = vendor.dataset.vendorId;
-                const vendorCountry = vendor.querySelector(`select[name="vendor_country_${vendorId}"]`).value;
-                const coo = vendor.querySelector(`select[name="vendor_coo_${vendorId}"]`).value;
-                const cost = vendor.querySelector(`input[name="vendor_cost_${vendorId}"]`).value;
+const orderQtyInput=document.querySelector('input[name="order_qty"]');if(orderQtyInput){orderQtyInput.addEventListener('input',function(){const quantity=this.value;document.querySelectorAll('input[name^="vendor_quantity_"]').forEach(v=>{v.value=quantity});validateForm()})}
 
-                if (vendorCountry && coo && cost && parseFloat(cost) > 0) {
-                    hasAtLeastOneCompleteVendor = true;
-                }
-            });
-
-            if (!hasAtLeastOneCompleteVendor) {
-                document.getElementById('run-btn').disabled = true;
-                return false;
-            }
-
-            document.getElementById('run-btn').disabled = false;
-            return true;
-        }
-
-        document.getElementById('mainForm').addEventListener('input', validateForm);
-        document.getElementById('mainForm').addEventListener('change', validateForm);
-
-        document.getElementById('mainForm').addEventListener('submit', async function(event) {
-            event.preventDefault();
-            if (!validateForm()) return;
-
-            const formData = new FormData(this);
-            const vendors = document.querySelectorAll('.vendor-col');
-
-            // Store form data for Excel export
-            calculationResults.formData = {
-                import_date: formData.get('import_date'),
-                import_country: formData.get('import_country'),
-                part_sku: formData.get('part_sku'),
-                description: formData.get('description'),
-                hs_code: formData.get('hs_code'),
-                order_qty: formData.get('order_qty'),
-                spi_applicable: formData.get('spi_applicable') === 'on'
-            };
-            calculationResults.vendors = [];
-
-            const debugDiv = document.getElementById('debug');
-            const debugContent = document.getElementById('vendor-debug-content');
-            if (!debugContent) {
-                const newDebugContent = document.createElement('div');
-                newDebugContent.id = 'vendor-debug-content';
-                debugDiv.appendChild(newDebugContent);
-            }
-
-            let debugResponses = [];
-            let allDutyTypes = new Set();
-
-            for (let i = 0; i < vendors.length; i++) {
-                const vendor = vendors[i];
-                const vendorId = vendor.dataset.vendorId;
-                const vendorCountry = vendor.querySelector(`select[name="vendor_country_${vendorId}"]`).value;
-                const coo = vendor.querySelector(`select[name="vendor_coo_${vendorId}"]`).value;
-                const cost = vendor.querySelector(`input[name="vendor_cost_${vendorId}"]`).value;
-                const quantity = vendor.querySelector(`input[name="vendor_quantity_${vendorId}"]`).value;
-                const name = vendor.querySelector(`input[name="vendor_name_${vendorId}"]`).value || `Vendor ${vendorId}`;
-
-                const resultsContainer = vendor.querySelector('.vendor-results-container');
-                resultsContainer.innerHTML = '';
-
-                if (vendorCountry && coo && cost && parseFloat(cost) > 0) {
-                    resultsContainer.innerHTML = '<div class="loading">Calculating...</div>';
-
-                    try {
-                        const response = await fetch('/calculate_vendor', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                description: formData.get('description'),
-                                hs_code: formData.get('hs_code'),
-                                coo: coo,
-                                cost: cost,
-                                quantity: quantity,
-                                import_country: formData.get('import_country'),
-                                import_date: formData.get('import_date'),
-                                spi_applicable: formData.get('spi_applicable') === 'on'
-                            })
-                        });
-
-                        const result = await response.json();
-
-                        debugResponses.push({
-                            vendor: name,
-                            vendorId: vendorId,
-                            success: result.success,
-                            request: result.request_payload,
-                            response: result.api_response || result.error_response || result,
-                            error: result.error
-                        });
-
-                        resultsContainer.innerHTML = '';
-
-                        if (result.success && result.duty_lines) {
-                            result.duty_lines.forEach(duty => allDutyTypes.add(duty.description));
-                            vendor.dataset.dutyResult = JSON.stringify(result);
-
-                            // Store vendor results for Excel export
-                            calculationResults.vendors.push({
-                                name: name,
-                                vendor_country: vendorCountry,
-                                coo: coo,
-                                cost: parseFloat(cost),
-                                quantity: parseInt(quantity),
-                                duty_lines: result.duty_lines,
-                                total_duty_rate: result.total_duty_rate,
-                                total_duty_amount: result.total_duty_amount
-                            });
-
-                            result.duty_lines.forEach(duty => {
-                                const dutyDiv = document.createElement('div');
-                                dutyDiv.className = 'input-group duty-result';
-                                dutyDiv.dataset.dutyType = duty.description;
-                                dutyDiv.innerHTML = `<span class="result-value">${duty.rate_percent.toFixed(2)}%</span>`;
-                                resultsContainer.appendChild(dutyDiv);
-                            });
-
-                            const totalRateDiv = document.createElement('div');
-                            totalRateDiv.className = 'input-group duty-result total-duty-rate';
-                            totalRateDiv.innerHTML = `<span class="result-value"><strong>${result.total_duty_rate}</strong></span>`;
-                            resultsContainer.appendChild(totalRateDiv);
-
-                            const totalAmountDiv = document.createElement('div');
-                            totalAmountDiv.className = 'input-group duty-result total-duty-amount';
-                            totalAmountDiv.innerHTML = `<span class="result-value"><strong>$${result.total_duty_amount.toFixed(2)}</strong></span>`;
-                            resultsContainer.appendChild(totalAmountDiv);
-
-                        } else {
-                            resultsContainer.innerHTML = '<div class="error">Calculation failed</div>';
-                        }
-                    } catch (error) {
-                        debugResponses.push({
-                            vendor: name,
-                            vendorId: vendorId,
-                            success: false,
-                            error: error.message
-                        });
-                        resultsContainer.innerHTML = '<div class="error">Calculation failed</div>';
-                    }
-                }
-            }
-
-            updateDutyLabels(allDutyTypes);
-            alignVendorResults(allDutyTypes);
-
-            const debugContentDiv = document.getElementById('vendor-debug-content');
-            if (debugContentDiv && debugResponses.length > 0) {
-                debugContentDiv.innerHTML = '<h4>Vendor Calculation API Responses:</h4>';
-                debugResponses.forEach((debug, idx) => {
-                    const statusIcon = debug.success ? '✅' : '❌';
-                    let detailsHtml = `
-                        <details open>
-                            <summary>${statusIcon} Vendor ${debug.vendorId}: ${debug.vendor} - ${debug.success ? 'Success' : 'Failed'}</summary>
-                    `;
-
-                    if (debug.request) {
-                        detailsHtml += `
-                            <h5>Request Payload:</h5>
-                            <pre>${JSON.stringify(debug.request, null, 2)}</pre>
-                        `;
-                    }
-
-                    if (!debug.success && debug.error) {
-                        detailsHtml += `
-                            <h5 style="color: red;">Error:</h5>
-                            <pre style="color: red;">${debug.error}</pre>
-                        `;
-                    }
-
-                    if (debug.response) {
-                        detailsHtml += `
-                            <h5>API Response:</h5>
-                            <pre>${JSON.stringify(debug.response, null, 2)}</pre>
-                        `;
-                    }
-
-                    detailsHtml += '</details>';
-                    debugContentDiv.innerHTML += detailsHtml;
-                });
-                debugDiv.classList.add('active');
-            }
-        });
-
-        function updateDutyLabels(dutyTypes) {
-            const labelsContainer = document.querySelector('.duty-labels-container');
-            labelsContainer.innerHTML = '';
-
-            dutyTypes.forEach(dutyType => {
-                const labelDiv = document.createElement('div');
-                labelDiv.className = 'input-group';
-                labelDiv.dataset.dutyType = dutyType;
-                labelDiv.innerHTML = `<label>${dutyType}</label>`;
-                labelsContainer.appendChild(labelDiv);
-            });
-
-            const totalRateLabel = document.createElement('div');
-            totalRateLabel.className = 'input-group';
-            totalRateLabel.innerHTML = '<label><strong>Total Duty Rate</strong></label>';
-            labelsContainer.appendChild(totalRateLabel);
-
-            const totalAmountLabel = document.createElement('div');
-            totalAmountLabel.className = 'input-group';
-            totalAmountLabel.innerHTML = '<label><strong>Total Duty ($)</strong></label>';
-            labelsContainer.appendChild(totalAmountLabel);
-        }
-
-        function alignVendorResults(dutyTypes) {
-            const vendors = document.querySelectorAll('.vendor-col');
-
-            vendors.forEach(vendor => {
-                const resultsContainer = vendor.querySelector('.vendor-results-container');
-                const resultData = vendor.dataset.dutyResult;
-
-                if (resultData) {
-                    const result = JSON.parse(resultData);
-                    const vendorDutyMap = new Map();
-
-                    result.duty_lines.forEach(duty => {
-                        vendorDutyMap.set(duty.description, duty);
-                    });
-
-                    resultsContainer.innerHTML = '';
-
-                    dutyTypes.forEach(dutyType => {
-                        const duty = vendorDutyMap.get(dutyType);
-                        const dutyDiv = document.createElement('div');
-                        dutyDiv.className = 'input-group duty-result';
-                        dutyDiv.dataset.dutyType = dutyType;
-
-                        if (duty) {
-                            dutyDiv.innerHTML = `<span class="result-value">${duty.rate_percent.toFixed(2)}%</span>`;
-                        } else {
-                            dutyDiv.innerHTML = '<span class="result-value">N/A</span>';
-                        }
-                        resultsContainer.appendChild(dutyDiv);
-                    });
-
-                    const totalRateDiv = document.createElement('div');
-                    totalRateDiv.className = 'input-group duty-result total-duty-rate';
-                    totalRateDiv.innerHTML = `<span class="result-value"><strong>${result.total_duty_rate}</strong></span>`;
-                    resultsContainer.appendChild(totalRateDiv);
-
-                    const totalAmountDiv = document.createElement('div');
-                    totalAmountDiv.className = 'input-group duty-result total-duty-amount';
-                    totalAmountDiv.innerHTML = `<span class="result-value"><strong>$${result.total_duty_amount.toFixed(2)}</strong></span>`;
-                    resultsContainer.appendChild(totalAmountDiv);
-                }
-            });
-        }
-
-        document.querySelectorAll('.vendor-col input, .vendor-col select').forEach(input => {
-            input.addEventListener('change', function() {
-                const vendor = this.closest('.vendor-col');
-                const resultsContainer = vendor.querySelector('.vendor-results-container');
-                if (resultsContainer) {
-                    resultsContainer.innerHTML = '';
-                }
-                vendor.removeAttribute('data-duty-result');
-                validateForm();
-            });
-        });
-
-        document.querySelectorAll('select[name^="vendor_country_"]').forEach(vendorCountrySelect => {
-            vendorCountrySelect.addEventListener('change', function() {
-                const vendorId = this.name.match(/\d+/)[0];
-                const cooSelect = document.querySelector(`select[name="vendor_coo_${vendorId}"]`);
-                if (cooSelect && this.value) {
-                    cooSelect.value = this.value;
-                }
-                validateForm();
-            });
-        });
-
-        const orderQtyInput = document.querySelector('input[name="order_qty"]');
-        if (orderQtyInput) {
-            orderQtyInput.addEventListener('input', function() {
-                const quantity = this.value;
-                document.querySelectorAll('input[name^="vendor_quantity_"]').forEach(vendorQtyInput => {
-                    vendorQtyInput.value = quantity;
-                });
-                validateForm();
-            });
-        }
-
-        // Excel Export Function
-        function exportToExcel() {
-            if (calculationResults.vendors.length === 0) {
-                alert('Please calculate duties first before exporting results.');
-                return;
-            }
-
-            // Send data to backend for Excel generation
-            fetch('/export_excel', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(calculationResults)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Export failed');
-                }
-                return response.blob();
-            })
-            .then(blob => {
-                // Create download link
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                const timestamp = new Date().toISOString().slice(0, 10);
-                a.download = `Tariff_Calculations_${timestamp}.xlsx`;
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
-                document.body.removeChild(a);
-            })
-            .catch(error => {
-                console.error('Export error:', error);
-                alert('Failed to export results. Please try again.');
-            });
-        }
-
-        validateForm();
+function exportToExcel(){if(calculationResults.vendors.length===0){alert('Please calculate duties first before exporting results.');return}fetch('/export_excel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(calculationResults)}).then(response=>{if(!response.ok)throw new Error('Export failed');return response.blob()}).then(blob=>{const url=window.URL.createObjectURL(blob);const a=document.createElement('a');a.style.display='none';a.href=url;const timestamp=new Date().toISOString().slice(0,10);a.download=`Tariff_Calculations_${timestamp}.xlsx`;document.body.appendChild(a);a.click();window.URL.revokeObjectURL(url);document.body.removeChild(a)}).catch(error=>{console.error('Export error:',error);alert('Failed to export results. Please try again.')})}
+validateForm();
     </script>
 </body>
 </html>

@@ -53,11 +53,48 @@ AVALARA_TOKEN = os.getenv('AVALARA_TOKEN')
 AVALARA_COMPANY_ID = os.getenv('AVALARA_COMPANY_ID')
 AVALARA_API_BASE = 'https://ns1-quoting-sbx.xbo.avalara.com/api/v2'
 
-# ISO-2 Country codes
+# 3CEOnline and Avalara credentials for HS Code classification
+AVALARA_USERNAME = os.getenv("AVALARA_USERNAME")
+AVALARA_PASSWORD = os.getenv("AVALARA_PASSWORD")
+
+# ISO-2 Country codes with proper flag emojis (alphabetically sorted)
 COUNTRIES = [
-    "US", "CN", "CA", "MX", "GB", "DE", "FR", "IT", "ES", "JP",
-    "KR", "IN", "BR", "AU", "RU", "VN", "TH", "MY", "ID", "PH",
-    "Not Specified"
+    {"code": "AT", "name": "Austria", "flag": "🇦🇹"},
+    {"code": "AU", "name": "Australia", "flag": "🇦🇺"},
+    {"code": "BE", "name": "Belgium", "flag": "🇧🇪"},
+    {"code": "BR", "name": "Brazil", "flag": "🇧🇷"},
+    {"code": "CA", "name": "Canada", "flag": "🇨🇦"},
+    {"code": "CN", "name": "China", "flag": "🇨🇳"},
+    {"code": "CZ", "name": "Czech Republic", "flag": "🇨🇿"},
+    {"code": "DE", "name": "Germany", "flag": "🇩🇪"},
+    {"code": "DK", "name": "Denmark", "flag": "🇩🇰"},
+    {"code": "ES", "name": "Spain", "flag": "🇪🇸"},
+    {"code": "FI", "name": "Finland", "flag": "🇫🇮"},
+    {"code": "FR", "name": "France", "flag": "🇫🇷"},
+    {"code": "GB", "name": "United Kingdom", "flag": "🇬🇧"},
+    {"code": "GR", "name": "Greece", "flag": "🇬🇷"},
+    {"code": "HK", "name": "Hong Kong", "flag": "🇭🇰"},
+    {"code": "ID", "name": "Indonesia", "flag": "🇮🇩"},
+    {"code": "IE", "name": "Ireland", "flag": "🇮🇪"},
+    {"code": "IN", "name": "India", "flag": "🇮🇳"},
+    {"code": "IT", "name": "Italy", "flag": "🇮🇹"},
+    {"code": "JP", "name": "Japan", "flag": "🇯🇵"},
+    {"code": "KR", "name": "South Korea", "flag": "🇰🇷"},
+    {"code": "MX", "name": "Mexico", "flag": "🇲🇽"},
+    {"code": "MY", "name": "Malaysia", "flag": "🇲🇾"},
+    {"code": "NL", "name": "Netherlands", "flag": "🇳🇱"},
+    {"code": "NO", "name": "Norway", "flag": "🇳🇴"},
+    {"code": "PH", "name": "Philippines", "flag": "🇵🇭"},
+    {"code": "PL", "name": "Poland", "flag": "🇵🇱"},
+    {"code": "PT", "name": "Portugal", "flag": "🇵🇹"},
+    {"code": "RU", "name": "Russia", "flag": "🇷🇺"},
+    {"code": "SE", "name": "Sweden", "flag": "🇸🇪"},
+    {"code": "SG", "name": "Singapore", "flag": "🇸🇬"},
+    {"code": "TH", "name": "Thailand", "flag": "🇹🇭"},
+    {"code": "TR", "name": "Turkey", "flag": "🇹🇷"},
+    {"code": "US", "name": "United States", "flag": "🇺🇸"},
+    {"code": "VN", "name": "Vietnam", "flag": "🇻🇳"},
+    {"code": "Not Specified", "name": "Not Specified", "flag": "🌍"}
 ]
 
 # Mock HS Code data
@@ -73,6 +110,21 @@ HS_CODES = {
 def get_avalara_auth_header():
     """Generate Basic Auth header for Avalara API using token from .env"""
     return f"Basic {AVALARA_TOKEN}"
+
+
+def get_region_for_country(destination_country):
+    """Get appropriate region for destination country"""
+    region_mapping = {
+        'US': 'MA',  # Massachusetts for US
+        'CA': 'ON',  # Ontario for Canada
+        'MX': 'DF',  # Mexico City for Mexico
+    }
+    return region_mapping.get(destination_country, '')
+
+
+def is_valid_hts_code(code):
+    """Validate HTS code format"""
+    return bool(re.match(r'^\d{4,10}(\.\d{2})?$|^9903\.\d{2}\.\d{2}$|^98\d{2}\.\d{2}\.\d{2}$', code))
 
 
 def call_global_compliance_api(hs_code, coo, vendor_country, cost_per_unit, quantity, description, import_country,
@@ -332,35 +384,186 @@ def calculate_tariff(hs_code, coo, vendor_country, cost_per_unit, quantity, calc
 def index():
     """Serve the main application page"""
 
-    countries = [{'code': c, 'name': c, 'flag': '🌍'} for c in COUNTRIES]
     incoterms = ['FCA', 'FOB', 'CIF', 'DDP']
     vendors_form = [{'id': i, 'name': '', 'country': '', 'coo': '', 'cost': '', 'quantity': ''} for i in range(1, 7)]
-    return render_template('index.html', countries=countries, incoterms=incoterms, vendors_form=vendors_form,
+    return render_template('index.html', countries=COUNTRIES, incoterms=incoterms, vendors_form=vendors_form,
                            form_data={})
 
 
 @app.route('/classify_hs', methods=['POST'])
 @auth_required
 def classify_hs():
-    """Classify HS Code based on product description"""
+    """
+    ADVANCED HS Code Classification using 3CEOnline + Avalara APIs
+
+    This replaces the simple keyword matching with a two-step process:
+    1. Call 3CEOnline Classification API to get HS6 code
+    2. Call Avalara API with that HS6 code for final classification
+    """
     data = request.json
-    description = data.get('description', '').lower()
+    description = data.get('description', '')
 
-    # Simple keyword matching for demo
-    hs_code = None
-    for code, info in HS_CODES.items():
-        if any(word in description for word in info['description'].lower().split()):
-            hs_code = code
-            break
+    # Get COO from first vendor or use default
+    coo = data.get('coo', 'CN')  # Default to China if not provided
+    destination_country = data.get('destination_country', 'US')  # Default to US
+    verify_description = data.get('verify_description', False)
 
-    if not hs_code:
-        # Default to first code if no match
-        hs_code = list(HS_CODES.keys())[0]
+    debug_info = f"Request data: {data}\n\n"
 
-    return jsonify({
-        'hs_code': hs_code,
-        'description': HS_CODES[hs_code]['description']
-    })
+    if not description:
+        debug_info += "Validation failed: Description missing.\n"
+        return jsonify({"error": "Description is required", "debug": debug_info}), 400
+
+    logger.debug(f"Fetching HS code for destination: {destination_country}")
+
+    try:
+        # Step 1: Call 3CEOnline classification API to get HS6 code
+        classify_url = f"{API_BASE_URL}/classify/v1/interactive/classify-start"
+        classify_headers = {
+            "Authorization": f"Bearer {API_TOKEN}",
+            "Content-Type": "application/json"
+        }
+        classify_payload = {
+            "proddesc": description
+        }
+
+        logger.debug(f"Sending 3CEOnline classification request to {classify_url} with payload: {classify_payload}")
+        classify_response = requests.post(classify_url, headers=classify_headers, json=classify_payload, timeout=10)
+
+        logger.debug(f"Classification response status: {classify_response.status_code}")
+        logger.debug(f"Classification response text: {classify_response.text}")
+
+        if classify_response.status_code != 200:
+            debug_info += f"3CEOnline classification API error ({classify_response.status_code}): {classify_response.text}\n"
+            return jsonify({"error": f"Classification API error: {classify_response.text}", "debug": debug_info}), 500
+
+        classify_json = classify_response.json()
+        debug_info += f"3CEOnline Classification API Response: {classify_json}\n\n"
+
+        # Extract HS6 code from classification response
+        hs6_code = None
+        requires_interaction = False
+
+        if classify_json.get('data'):
+            data_obj = classify_json['data']
+            hs6_code_raw = data_obj.get('hsCode', '')
+
+            # Check if there's a current question that needs answering
+            current_question = data_obj.get('currentQuestionInteraction')
+            if current_question and not hs6_code_raw:
+                requires_interaction = True
+                debug_info += f"3CEOnline requires additional classification questions. Current question: {current_question.get('name', 'unknown')}\n"
+
+            # Only use the HS code if it's not empty
+            if hs6_code_raw and hs6_code_raw.strip():
+                hs6_code = str(hs6_code_raw)
+                logger.debug(f"Successfully extracted HS6 code from classification: {hs6_code}")
+
+        if not hs6_code:
+            debug_info += f"No HS6 code found in 3CEOnline classification response. Raw hsCode value: '{classify_json.get('data', {}).get('hsCode', 'N/A')}'\n"
+
+            # Check if this is because interactive classification is needed
+            if requires_interaction:
+                debug_info += "Classification requires answering additional questions in 3CEOnline interactive system.\n"
+
+            # If verification is enabled and no HS code found, return verification failure
+            if verify_description:
+                logger.debug(f"Verification enabled and no HS6 code found for description: '{description}'")
+                return jsonify({
+                    "verification_failed": True,
+                    "error": "Description insufficient for classification - may require more specific details or interactive classification",
+                    "debug": debug_info
+                }), 200
+            else:
+                # Verification disabled: proceed to Avalara API with description only (no HS6 code)
+                logger.debug(
+                    f"No HS6 code from 3CEOnline, but verification disabled. Proceeding to Avalara with description only.")
+                debug_info += "Proceeding to Avalara quoting API with description only (no HS6 code from classification).\n"
+
+        # Step 2: Call Avalara API (either with HS6 code from classification, or with description only)
+        avalara_headers = {
+            "Authorization": "Basic " + base64.b64encode(f"{AVALARA_USERNAME}:{AVALARA_PASSWORD}".encode()).decode(),
+            "Content-Type": "application/json"
+        }
+
+        # Build classification parameters - include HS6 code only if we have one
+        classification_params = [{"name": "price", "value": "100", "unit": "USD"}]
+        if hs6_code:
+            classification_params.append({"name": "hs_code", "value": hs6_code})
+            debug_info += f"Adding HS6 code {hs6_code} to Avalara request.\n"
+        else:
+            debug_info += "No HS6 code available - Avalara will classify based on description only.\n"
+
+        # Use actual destination country
+        destination_region = get_region_for_country(destination_country)
+
+        # Build Avalara quoting URL
+        avalara_url = f"https://quoting.xbo.dev.avalara.io/api/v2/companies/{AVALARA_COMPANY_ID}/globalcompliance"
+
+        avalara_payload = {
+            "id": "classification-request",
+            "companyId": int(AVALARA_COMPANY_ID),
+            "currency": "USD",
+            "sellerCode": "SC8104341",
+            "shipFrom": {"country": coo},
+            "destinations": [{"shipTo": {"country": destination_country, "region": destination_region}}],
+            "lines": [{
+                "lineNumber": 1,
+                "quantity": 1,
+                "item": {
+                    "itemCode": "1",
+                    "description": description,
+                    "itemGroup": "General",
+                    "classificationParameters": classification_params,
+                    "parameters": []
+                },
+                "classificationParameters": classification_params
+            }],
+            "type": "QUOTE_ENHANCED10",
+            "disableCalculationSummary": False,
+            "restrictionsCheck": True,
+            "program": "Regular"
+        }
+
+        logger.debug(
+            f"Sending Avalara request to {avalara_url} with destination {destination_country} and payload: {avalara_payload}")
+        avalara_response = requests.post(avalara_url, headers=avalara_headers, json=avalara_payload, timeout=10)
+        avalara_response.raise_for_status()
+        avalara_json = avalara_response.json()
+        debug_info += f"Avalara API Response: {avalara_json}\n\n"
+
+        # Extract HS code from Avalara response
+        hs_code = avalara_json.get('globalCompliance', [{}])[0].get('quote', {}).get('lines', [{}])[0].get('hsCode')
+
+        if hs_code:
+            logger.debug(f"Successfully extracted final HS code from Avalara: {hs_code}")
+            return jsonify({
+                "hs_code": hs_code,
+                "description": f"Classified via 3CEOnline + Avalara",
+                "debug": debug_info
+            })
+        elif hs6_code:
+            # Fallback to classified HS6 code if Avalara doesn't provide one
+            logger.debug(f"No HS code from Avalara, using classified HS6: {hs6_code}")
+            return jsonify({
+                "hs_code": hs6_code,
+                "description": f"Classified via 3CEOnline (HS6)",
+                "debug": debug_info
+            })
+        else:
+            # Neither 3CEOnline nor Avalara provided an HS code
+            debug_info += "Neither 3CEOnline classification nor Avalara quoting provided an HS code.\n"
+            return jsonify(
+                {"error": "No HS code found from either classification or quoting API", "debug": debug_info}), 500
+
+    except requests.RequestException as e:
+        debug_info += f"Network error: {str(e)}\nResponse text: {getattr(e.response, 'text', 'No response')}\n"
+        logger.error(f"Network error: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Network error: {str(e)}", "debug": debug_info}), 500
+    except Exception as e:
+        debug_info += f"Unexpected error: {str(e)}\nStack trace: {traceback.format_exc()}\n"
+        logger.error(f"Unexpected error: {str(e)}", exc_info=True)
+        return jsonify({"error": f"Unexpected error: {str(e)}", "debug": debug_info}), 500
 
 
 @app.route('/calculate_vendor', methods=['POST'])
