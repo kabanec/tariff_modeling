@@ -641,6 +641,149 @@ def calculate_vendor():
         }), 500
 
 
+@app.route('/landed_cost')
+@auth_required
+def landed_cost():
+    """Serve the Total Landed Cost page"""
+    return render_template('landed_cost.html', countries=COUNTRIES, form_data={})
+
+
+@app.route('/calculate_landed_cost', methods=['POST'])
+@auth_required
+def calculate_landed_cost():
+    """Calculate total landed cost for a vendor including duties, taxes, and shipping"""
+    data = request.json
+
+    description = data.get('description', '')
+    hs_code = data.get('hs_code', '').replace('.', '')
+    vendor_country = data.get('vendor_country')
+    cogs = float(data.get('cogs', 0))
+    quantity = int(data.get('quantity', 1))
+    import_country = data.get('import_country', 'US')
+    import_date = data.get('import_date', datetime.now().strftime('%Y-%m-%d'))
+    shipping = float(data.get('shipping', 0))
+
+    try:
+        url = f"{AVALARA_API_BASE}/companies/{AVALARA_COMPANY_ID}/globalcompliance"
+
+        auth_header = get_avalara_auth_header()
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': auth_header
+        }
+
+        # Build payload with shipping costs
+        payload = {
+            "id": "LANDED-COST-001",
+            "companyId": int(AVALARA_COMPANY_ID),
+            "transactionDate": import_date,
+            "currency": "USD",
+            "sellerCode": "SELLER-001",
+            "b2b": True,
+            "shipFrom": {
+                "country": vendor_country
+            },
+            "destinations": [{
+                "shipTo": {
+                    "country": import_country.lower(),
+                    "region": "ca"
+                },
+                "parameters": [],
+                "taxRegistered": False
+            }],
+            "lines": [{
+                "lineNumber": 1,
+                "quantity": quantity,
+                "preferenceProgramApplicable": False,
+                "item": {
+                    "itemCode": 11,
+                    "description": description,
+                    "classifications": [{
+                        "country": import_country.upper(),
+                        "hscode": hs_code.replace(".", "").replace(" ", "")
+                    }],
+                    "classificationParameters": [{
+                        "name": "price",
+                        "value": str(cogs),
+                        "unit": "USD"
+                    }, {
+                        "name": "coo",
+                        "value": vendor_country
+                    }],
+                    "parameters": [{
+                        "name": "weight",
+                        "value": "0",
+                        "unit": "lb"
+                    }, {
+                        "name": "SHIPPING",
+                        "value": str(shipping),
+                        "unit": "USD"
+                    }]
+                },
+                "classificationParameters": []
+            }],
+            "type": "QUOTE_MAXIMUM",
+            "disableCalculationSummary": False,
+            "restrictionsCheck": False,
+            "program": "Regular"
+        }
+
+        # Make API call
+        response = requests.post(url, json=payload, headers=headers, timeout=30)
+        response.raise_for_status()
+        api_response = response.json()
+
+        # Parse response
+        total_duty_rate = "0%"
+        total_duty_tax = 0.0
+
+        if 'globalCompliance' in api_response and len(api_response['globalCompliance']) > 0:
+            quote = api_response['globalCompliance'][0].get('quote', {})
+            lines = quote.get('lines', [])
+
+            if len(lines) > 0:
+                calculation_summary = lines[0].get('calculationSummary', {})
+
+                # Get duty rate from dutyGranularity
+                duty_granularity = calculation_summary.get('dutyGranularity', [])
+                if duty_granularity:
+                    rate = float(duty_granularity[0].get('rate', 0))
+                    total_duty_rate = f"{rate * 100:.1f}%"
+
+                # Sum all costLines (duties + taxes)
+                cost_lines = lines[0].get('costLines', [])
+                for cost_line in cost_lines:
+                    total_duty_tax += float(cost_line.get('value', 0))
+
+        return jsonify({
+            'success': True,
+            'total_duty_rate': total_duty_rate,
+            'total_duty_tax': total_duty_tax,
+            'api_response': api_response,
+            'request_payload': payload
+        })
+
+    except requests.exceptions.RequestException as e:
+        error_details = str(e)
+        response_text = None
+        if hasattr(e, 'response') and e.response is not None:
+            try:
+                response_text = e.response.json()
+            except:
+                response_text = e.response.text
+
+        return jsonify({
+            'success': False,
+            'error': error_details,
+            'error_response': response_text
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
 @app.route('/export_excel', methods=['POST'])
 @auth_required
 def export_excel():

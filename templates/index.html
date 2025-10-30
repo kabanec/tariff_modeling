@@ -85,9 +85,16 @@
                         <div class="input-group"><label>Ship Date <span class="required">*</span></label><input type="date" name="import_date" id="import_date" value="" required></div>
                         <div class="input-group"><label>Destination <span class="required">*</span></label><select name="import_country" required><option value="US" selected>🇺🇸 United States</option><option value="AT">🇦🇹 Austria</option><option value="AU">🇦🇺 Australia</option><option value="BE">🇧🇪 Belgium</option><option value="BR">🇧🇷 Brazil</option><option value="CA">🇨🇦 Canada</option><option value="CN">🇨🇳 China</option><option value="CZ">🇨🇿 Czech Republic</option><option value="DE">🇩🇪 Germany</option><option value="DK">🇩🇰 Denmark</option><option value="ES">🇪🇸 Spain</option><option value="FI">🇫🇮 Finland</option><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option><option value="GR">🇬🇷 Greece</option><option value="HK">🇭🇰 Hong Kong</option><option value="ID">🇮🇩 Indonesia</option><option value="IE">🇮🇪 Ireland</option><option value="IN">🇮🇳 India</option><option value="IT">🇮🇹 Italy</option><option value="JP">🇯🇵 Japan</option><option value="KR">🇰🇷 South Korea</option><option value="MX">🇲🇽 Mexico</option><option value="MY">🇲🇾 Malaysia</option><option value="NL">🇳🇱 Netherlands</option><option value="NO">🇳🇴 Norway</option><option value="PH">🇵🇭 Philippines</option><option value="PL">🇵🇱 Poland</option><option value="PT">🇵🇹 Portugal</option><option value="RU">🇷🇺 Russia</option><option value="SE">🇸🇪 Sweden</option><option value="SG">🇸🇬 Singapore</option><option value="TH">🇹🇭 Thailand</option><option value="TR">🇹🇷 Turkey</option><option value="VN">🇻🇳 Vietnam</option></select></div>
                         <div class="input-group"><label>Part # / SKU</label><input type="text" name="part_sku" value="" placeholder="Enter SKU"></div>
-                        <div class="input-group"><label>Product Description <span class="required">*</span></label><input type="text" name="description" id="description" value="" required placeholder="Enter description"></div>
+                        <div class="input-group"><label>Product Description <span class="required">*</span></label><div style="display: flex; gap: 8px;"><input type="text" name="description" id="description" value="" required placeholder="Enter description" style="flex: 1;"><button type="button" id="classifyBtn" style="padding: 10px 20px; background: #006B7D; color: white; border: none; border-radius: 8px; cursor: pointer; white-space: nowrap;">Classify</button></div></div>
                         <div class="input-group"><label>Tariff Code <span class="required">*</span></label><input type="text" name="hs_code" id="hs_code" value="" placeholder="e.g., 6307909891" maxlength="10" required></div>
                     </div>
+                </div>
+                <div id="classification-widget" style="display: none; margin-bottom: 20px; border: 2px solid #ff6600; border-radius: 12px; padding: 20px; background: #fff;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0; color: #1a2332; font-size: 1.1rem;">Product Classification</h3>
+                        <button type="button" id="closeWidget" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">&times;</button>
+                    </div>
+                    <div id="widget-container" style="height: 600px; border: 1px solid #e5e7eb; border-radius: 8px;"></div>
                 </div>
                 <div class="form-section">
                     <h2>Order Details</h2>
@@ -118,6 +125,7 @@
                 <div class="button-group">
                     <button type="submit" name="action" value="run" id="run-btn" class="run-btn" disabled>Calculate duties</button>
                     <button type="button" name="action" value="save" class="save-btn" onclick="exportToExcel()">Save Results</button>
+                    <button type="button" class="save-btn" onclick="goToLandedCost()" style="background: #006B7D;">Go to Total Landed Cost</button>
                 </div>
             </form>
             <div style="text-align: center; margin-top: 24px;"><button class="debug-btn" onclick="toggleDebug()">Toggle API Debug Responses</button></div>
@@ -125,6 +133,151 @@
         </div>
         <div class="footer">© Avalara, Inc. 2025</div>
     </div>
+
+    <!-- Classification Widget Script -->
+    <script
+        id="ccce-script"
+        data-element-id="widget-container"
+        src="https://hscode-self-classify.sbx.avalara.com/embed.js"
+        runOnload="false">
+    </script>
+
+    <script>
+// Wait for widget script to load
+let ccceReady = false;
+const checkCCCE = setInterval(() => {
+    if (typeof ccce !== 'undefined') {
+        ccceReady = true;
+        clearInterval(checkCCCE);
+        console.log('✓ Classification widget loaded successfully');
+    }
+}, 100);
+
+// Classification widget integration - matches working test page pattern
+document.getElementById('classifyBtn').addEventListener('click', function() {
+    console.log('>>> Classify button clicked');
+
+    const description = document.getElementById('description').value.trim();
+    if (!description) {
+        alert('Please enter a product description first');
+        return;
+    }
+
+    if (!ccceReady || typeof ccce === 'undefined') {
+        console.error('❌ Widget not ready');
+        alert('Classification widget is still loading. Please wait a moment and try again.');
+        return;
+    }
+
+    // Get destination and origin countries
+    const destination = document.querySelector('select[name="import_country"]').value;
+
+    // Try to get origin from first vendor with a country selected, default to US
+    let origin = 'US';
+    for (let i = 1; i <= 6; i++) {
+        const vendorCoo = document.querySelector(`select[name="vendor_coo_${i}"]`);
+        const vendorCountry = document.querySelector(`select[name="vendor_country_${i}"]`);
+        if (vendorCoo && vendorCoo.value) {
+            origin = vendorCoo.value;
+            break;
+        } else if (vendorCountry && vendorCountry.value) {
+            origin = vendorCountry.value;
+            break;
+        }
+    }
+
+    console.log('📋 Parameters:', {
+        destination: destination,
+        origin: origin,
+        description: description
+    });
+
+    // Show widget container
+    const widgetContainer = document.getElementById('classification-widget');
+    widgetContainer.style.display = 'block';
+    setTimeout(() => {
+        widgetContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+
+    // Get script element
+    const script = document.getElementById('ccce-script');
+
+    // Set script attributes dynamically (like test page does)
+    console.log('🔧 Setting script attributes...');
+    script.setAttribute('env', 'sbx');
+    script.setAttribute('data-profile-id', '2007305446');
+    script.setAttribute('cip', ''); // CIP as bare attribute for sbx environment
+
+    // Clear any old optional attributes
+    const optionalAttrs = ['debug', 'verbose', 'forceTheme', 'no-shadow'];
+    optionalAttrs.forEach(attr => script.removeAttribute(attr));
+
+    // Reset component before reinitializing (like test page does)
+    console.log('🔄 Resetting component...');
+    if (ccce._loaded) {
+        ccce._loaded = false;
+        ccce._unload();
+    }
+
+    // Initialize widget
+    try {
+        console.log('⚙️  Initializing CCCE widget...');
+        ccce.init(script);
+
+        // Classification parameters (matching test page structure)
+        const params = {
+            product: description,
+            destination: destination,
+            origin: origin,
+            lang: 'English',
+            avaTaxId: '2007305446',
+            avaCustomerId: '00000',
+            hs6: false,              // Don't limit to HS6 only
+            useKeyboard: false,
+            useLinkOut: false,
+            useTypeform: true,       // Use typeform interface
+            hideTheme: false,
+            hideClose: false
+        };
+
+        console.log('🚀 Starting classification with params:', JSON.stringify(params, null, 2));
+
+        // Start classification
+        ccce.classify(
+            params,
+            // Success callback
+            function(data) {
+                console.log('✅ Classification Success:', data);
+                if (data && data.hsCode) {
+                    document.getElementById('hs_code').value = data.hsCode;
+                    document.getElementById('hs_code').style.backgroundColor = '#d1fae5';
+                    document.getElementById('hs_code').style.borderColor = '#10b981';
+                    console.log('✓ HS Code set to:', data.hsCode);
+                } else {
+                    console.warn('⚠️  No HS code in response:', data);
+                }
+                widgetContainer.style.display = 'none';
+            },
+            // Error/abort callback
+            function(err) {
+                console.warn('⚠️  Classification Aborted or Error:', err);
+                widgetContainer.style.display = 'none';
+            }
+        );
+    } catch(e) {
+        console.error('❌ Widget initialization error:', e);
+        console.error('Stack trace:', e.stack);
+        alert('Error initializing classification widget: ' + e.message);
+        widgetContainer.style.display = 'none';
+    }
+});
+
+// Close widget button
+document.getElementById('closeWidget').addEventListener('click', function() {
+    document.getElementById('classification-widget').style.display = 'none';
+});
+    </script>
+
     <script>
 let calculationResults={formData:{},vendors:[]};
 document.addEventListener('DOMContentLoaded',function(){const i=document.getElementById('import_date');if(!i.value){const t=new Date();i.value=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`}});
@@ -151,6 +304,37 @@ document.querySelectorAll('select[name^="vendor_country_"]').forEach(sel=>{sel.a
 const orderQtyInput=document.querySelector('input[name="order_qty"]');if(orderQtyInput){orderQtyInput.addEventListener('input',function(){const quantity=this.value;document.querySelectorAll('input[name^="vendor_quantity_"]').forEach(v=>{v.value=quantity});validateForm()})}
 
 function exportToExcel(){if(calculationResults.vendors.length===0){alert('Please calculate duties first before exporting results.');return}fetch('/export_excel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(calculationResults)}).then(response=>{if(!response.ok)throw new Error('Export failed');return response.blob()}).then(blob=>{const url=window.URL.createObjectURL(blob);const a=document.createElement('a');a.style.display='none';a.href=url;const timestamp=new Date().toISOString().slice(0,10);a.download=`Tariff_Calculations_${timestamp}.xlsx`;document.body.appendChild(a);a.click();window.URL.revokeObjectURL(url);document.body.removeChild(a)}).catch(error=>{console.error('Export error:',error);alert('Failed to export results. Please try again.')})}
+
+function goToLandedCost(){
+    const date=document.querySelector('input[name="import_date"]').value;
+    const country=document.querySelector('select[name="import_country"]').value;
+    const sku=document.querySelector('input[name="part_sku"]').value;
+    const description=document.querySelector('input[name="description"]').value;
+    const hsCode=document.querySelector('input[name="hs_code"]').value;
+    const qty=document.querySelector('input[name="order_qty"]').value;
+
+    const vendors=[];
+    for(let i=1;i<=6;i++){
+        const country=document.querySelector(`select[name="vendor_country_${i}"]`).value;
+        const cogs=document.querySelector(`input[name="vendor_cost_${i}"]`).value;
+        if(country&&cogs){
+            vendors.push({country:country,cogs:cogs});
+        }
+    }
+
+    const params=new URLSearchParams({
+        date:date,
+        country:country,
+        sku:sku,
+        description:description,
+        hsCode:hsCode,
+        qty:qty,
+        vendors:JSON.stringify(vendors)
+    });
+
+    window.location.href=`/landed_cost?${params.toString()}`;
+}
+
 validateForm();
     </script>
 </body>

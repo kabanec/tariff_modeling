@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Avalara Total Landed Cost Tool</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; background-color: #f5f7f9; color: #1a2332; line-height: 1.6; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 0; }
+        .app-header { background: linear-gradient(135deg, #ff6600 0%, #ff8533 100%); color: white; padding: 32px 40px; margin-bottom: 0; box-shadow: 0 4px 12px rgba(255, 102, 0, 0.15); }
+        .app-header h1 { font-size: 2rem; font-weight: 600; margin-bottom: 8px; letter-spacing: -0.5px; }
+        .app-header p { font-size: 1rem; opacity: 0.95; font-weight: 400; }
+        .main-content { padding: 24px 40px 40px; background: white; }
+        .form-section { background: white; padding: 24px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); }
+        .form-section h2 { font-size: 1.25rem; font-weight: 600; color: #1a2332; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #f0f0f0; }
+        .header { display: grid; grid-template-columns: repeat(6, 1fr); gap: 16px; margin-bottom: 0; }
+        .input-group { display: flex; flex-direction: column; }
+        label { font-weight: 600; margin-bottom: 8px; color: #1a2332; font-size: 0.875rem; letter-spacing: 0.02em; white-space: nowrap; }
+        label .required { color: #ff6600; margin-left: 2px; }
+        input, select { padding: 10px 14px; border: 1.5px solid #d1d5db; border-radius: 8px; font-size: 0.95rem; background: white; color: #1a2332; transition: all 0.2s ease; font-family: inherit; }
+        input:focus, select:focus { outline: none; border-color: #ff6600; box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.1); }
+        input:hover, select:hover { border-color: #ff6600; }
+        input[type="date"] { cursor: pointer; }
+        .order-details { display: flex; gap: 24px; align-items: flex-end; margin-top: 0; }
+        .order-details .input-group { flex: 0 0 auto; }
+        .order-details .input-group input[type="number"] { max-width: 150px; }
+        .vendors { display: grid; grid-template-columns: 200px repeat(6, 1fr); gap: 1px; background: #e5e7eb; border-radius: 8px; overflow: hidden; margin-top: 20px; }
+        .vendors .label-col { background: #fff9e6; padding: 12px 16px; display: flex; flex-direction: column; gap: 1px; position: sticky; left: 0; z-index: 10; }
+        .vendors .label-col .input-group { min-height: 50px; display: flex; align-items: center; justify-content: flex-start; background: #fff9e6; padding: 8px; border-radius: 4px; }
+        .vendors .label-col .input-group label { margin: 0; font-size: 0.875rem; font-weight: 600; color: #1a2332; text-align: left; white-space: normal; word-wrap: break-word; overflow-wrap: break-word; hyphens: auto; line-height: 1.4; width: 100%; }
+        .vendors .vendor-col { background: white; padding: 12px; display: flex; flex-direction: column; gap: 1px; border-right: 1px solid #e5e7eb; transition: all 0.3s ease; }
+        .vendors .vendor-col:last-child { border-right: none; }
+        .vendors .vendor-col.cheapest-vendor { background: #f0fdf4; border: 3px solid #10b981; box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1); }
+        .vendors .vendor-col .input-group { min-height: 50px; display: flex; flex-direction: column; justify-content: center; padding: 0; }
+        .vendors input, .vendors select { width: 100%; padding: 8px 12px; font-size: 0.875rem; border-radius: 6px; }
+        .vendors input[readonly] { background-color: #f3f4f6; color: #6b7280; cursor: not-allowed; }
+        .vendor-results-container { display: flex; flex-direction: column; gap: 1px; width: 100%; }
+        .vendor-results-container .result-field { background: #fef3f0; padding: 12px; border-radius: 6px; text-align: center; min-height: 60px; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; color: #1a2332; border: 1px solid #fed7cc; }
+        .vendor-results-container .total-cost-result { font-weight: 700; font-size: 1.1rem; border: 2px solid; }
+        .result-labels-container { display: flex; flex-direction: column; gap: 1px; width: 100%; }
+        .result-labels-container .input-group { min-height: 60px; display: flex; align-items: center; background: #fff9e6; padding: 10px; border-radius: 4px; }
+        .result-labels-container .input-group label { margin: 0; font-size: 0.875rem; text-align: left; white-space: normal; word-wrap: break-word; overflow-wrap: break-word; line-height: 1.4; width: 100%; }
+        .result-labels-container .total-cost-label { background: #fff3cd; font-weight: 700; }
+        .result-labels-container .total-cost-label label { font-size: 1rem; font-weight: 700; }
+        .loading { padding: 20px; text-align: center; font-size: 1rem; color: #ff6600; font-weight: 600; }
+        .error { color: #dc2626; font-weight: 600; text-align: center; padding: 10px; background: #fef2f2; border-radius: 6px; border: 1px solid #fecaca; }
+        .button-group { display: flex; justify-content: center; gap: 16px; margin: 32px 0 24px; }
+        button { padding: 14px 32px; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; font-weight: 600; transition: all 0.2s ease; font-family: inherit; letter-spacing: 0.02em; }
+        button:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+        button:active { transform: translateY(0); }
+        .run-btn { background: linear-gradient(135deg, #006B7D 0%, #008B9F 100%); color: white; box-shadow: 0 2px 8px rgba(0, 107, 125, 0.2); }
+        .run-btn:disabled { background: #d1d5db; cursor: not-allowed; box-shadow: none; transform: none; }
+        .save-btn { background: #ff6600; color: white; box-shadow: 0 2px 8px rgba(255, 102, 0, 0.2); }
+        #hs_code { background-color: #f0f9ff; border-color: #93c5fd; }
+        .footer { text-align: center; padding: 24px; color: #9ca3af; font-size: 0.875rem; background: white; border-top: 1px solid #e5e7eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="app-header">
+            <h1>Avalara Total Landed Cost</h1>
+            <p>Calculate complete landed costs including duties, taxes, and logistics</p>
+        </div>
+        <div class="main-content">
+            <form method="POST" id="mainForm" onsubmit="return validateForm(event)">
+                <div class="form-section">
+                    <h2>Product & Import Details</h2>
+                    <div class="header">
+                        <div class="input-group"><label>Import Date <span class="required">*</span></label><input type="date" name="import_date" id="import_date" value="" required></div>
+                        <div class="input-group"><label>Import Country <span class="required">*</span></label><select name="import_country" required><option value="US" selected>🇺🇸 United States</option><option value="AT">🇦🇹 Austria</option><option value="AU">🇦🇺 Australia</option><option value="BE">🇧🇪 Belgium</option><option value="BR">🇧🇷 Brazil</option><option value="CA">🇨🇦 Canada</option><option value="CN">🇨🇳 China</option><option value="CZ">🇨🇿 Czech Republic</option><option value="DE">🇩🇪 Germany</option><option value="DK">🇩🇰 Denmark</option><option value="ES">🇪🇸 Spain</option><option value="FI">🇫🇮 Finland</option><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option><option value="GR">🇬🇷 Greece</option><option value="HK">🇭🇰 Hong Kong</option><option value="ID">🇮🇩 Indonesia</option><option value="IE">🇮🇪 Ireland</option><option value="IN">🇮🇳 India</option><option value="IT">🇮🇹 Italy</option><option value="JP">🇯🇵 Japan</option><option value="KR">🇰🇷 South Korea</option><option value="MX">🇲🇽 Mexico</option><option value="MY">🇲🇾 Malaysia</option><option value="NL">🇳🇱 Netherlands</option><option value="NO">🇳🇴 Norway</option><option value="PH">🇵🇭 Philippines</option><option value="PL">🇵🇱 Poland</option><option value="PT">🇵🇹 Portugal</option><option value="RU">🇷🇺 Russia</option><option value="SE">🇸🇪 Sweden</option><option value="SG">🇸🇬 Singapore</option><option value="TH">🇹🇭 Thailand</option><option value="TR">🇹🇷 Turkey</option><option value="VN">🇻🇳 Vietnam</option></select></div>
+                        <div class="input-group"><label>Part # / SKU</label><input type="text" name="part_sku" value="" placeholder="Enter SKU"></div>
+                        <div class="input-group"><label>Product Name / Description <span class="required">*</span></label><div style="display: flex; gap: 8px;"><input type="text" name="description" id="description" value="" required placeholder="Enter description" style="flex: 1;"><button type="button" id="classifyBtn" style="padding: 10px 20px; background: #006B7D; color: white; border: none; border-radius: 8px; cursor: pointer; white-space: nowrap;">Classify</button></div></div>
+                        <div class="input-group"><label>HS Code <span class="required">*</span></label><input type="text" name="hs_code" id="hs_code" value="" placeholder="e.g., 6307909891" maxlength="10" required></div>
+                        <div class="input-group"><label>Incoterm</label><select name="incoterm"><option value="DDP" selected>DDP</option><option value="DAP">DAP</option></select></div>
+                    </div>
+                </div>
+                <div id="classification-widget" style="display: none; margin-bottom: 20px; border: 2px solid #ff6600; border-radius: 12px; padding: 20px; background: #fff;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 style="margin: 0; color: #1a2332; font-size: 1.1rem;">Product Classification</h3>
+                        <button type="button" id="closeWidget" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #6b7280;">&times;</button>
+                    </div>
+                    <div id="widget-container" style="height: 600px; border: 1px solid #e5e7eb; border-radius: 8px;"></div>
+                </div>
+                <div class="form-section">
+                    <h2>Order Details</h2>
+                    <div class="order-details">
+                        <div class="input-group"><label>Order Qty <span class="required">*</span></label><input type="number" name="order_qty" value="" min="1" required placeholder="Enter quantity"></div>
+                    </div>
+                </div>
+                <div class="form-section">
+                    <h2>Vendor Comparison</h2>
+                    <div class="vendors">
+                        <div class="label-col">
+                            <div class="input-group"><label>Vendor Country <span class="required">*</span></label></div>
+                            <div class="input-group"><label>COGS (ea) <span class="required">*</span></label></div>
+                            <div class="input-group"><label>Export Fees ($)</label></div>
+                            <div class="input-group"><label>Delivery to Port ($)</label></div>
+                            <div class="input-group"><label>Intl. Freight & Insurance ($)</label></div>
+                            <div class="input-group"><label>MPF / HMF ($)</label></div>
+                            <div class="input-group"><label>Customs Brokerage Fees ($)</label></div>
+                            <div class="input-group"><label>Final Delivery ($)</label></div>
+                            <div class="input-group"><label>Other ($)</label></div>
+                            <div class="result-labels-container"></div>
+                        </div>
+                        <div class="vendor-col" data-vendor-id="1">
+                            <div class="input-group"><select name="vendor_country_1"><option value="">Select</option><option value="AT">🇦🇹 Austria</option><option value="AU">🇦🇺 Australia</option><option value="BE">🇧🇪 Belgium</option><option value="BR">🇧🇷 Brazil</option><option value="CA">🇨🇦 Canada</option><option value="CN">🇨🇳 China</option><option value="CZ">🇨🇿 Czech Republic</option><option value="DE">🇩🇪 Germany</option><option value="DK">🇩🇰 Denmark</option><option value="ES">🇪🇸 Spain</option><option value="FI">🇫🇮 Finland</option><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option><option value="GR">🇬🇷 Greece</option><option value="HK">🇭🇰 Hong Kong</option><option value="ID">🇮🇩 Indonesia</option><option value="IE">🇮🇪 Ireland</option><option value="IN">🇮🇳 India</option><option value="IT">🇮🇹 Italy</option><option value="JP">🇯🇵 Japan</option><option value="KR">🇰🇷 South Korea</option><option value="MX">🇲🇽 Mexico</option><option value="MY">🇲🇾 Malaysia</option><option value="NL">🇳🇱 Netherlands</option><option value="NO">🇳🇴 Norway</option><option value="PH">🇵🇭 Philippines</option><option value="PL">🇵🇱 Poland</option><option value="PT">🇵🇹 Portugal</option><option value="RU">🇷🇺 Russia</option><option value="SE">🇸🇪 Sweden</option><option value="SG">🇸🇬 Singapore</option><option value="TH">🇹🇭 Thailand</option><option value="TR">🇹🇷 Turkey</option><option value="US">🇺🇸 United States</option><option value="VN">🇻🇳 Vietnam</option></select></div>
+                            <div class="input-group"><input type="number" step="0.01" name="cogs_1" min="0.01" placeholder="0.00"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="export_fees_1" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="delivery_port_1" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="intl_freight_1" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="mpf_hmf_1" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="brokerage_1" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="final_delivery_1" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="other_1" min="0" placeholder="0.00" value="0"></div>
+                            <div class="vendor-results-container"></div>
+                        </div>
+                        <div class="vendor-col" data-vendor-id="2">
+                            <div class="input-group"><select name="vendor_country_2"><option value="">Select</option><option value="AT">🇦🇹 Austria</option><option value="AU">🇦🇺 Australia</option><option value="BE">🇧🇪 Belgium</option><option value="BR">🇧🇷 Brazil</option><option value="CA">🇨🇦 Canada</option><option value="CN">🇨🇳 China</option><option value="CZ">🇨🇿 Czech Republic</option><option value="DE">🇩🇪 Germany</option><option value="DK">🇩🇰 Denmark</option><option value="ES">🇪🇸 Spain</option><option value="FI">🇫🇮 Finland</option><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option><option value="GR">🇬🇷 Greece</option><option value="HK">🇭🇰 Hong Kong</option><option value="ID">🇮🇩 Indonesia</option><option value="IE">🇮🇪 Ireland</option><option value="IN">🇮🇳 India</option><option value="IT">🇮🇹 Italy</option><option value="JP">🇯🇵 Japan</option><option value="KR">🇰🇷 South Korea</option><option value="MX">🇲🇽 Mexico</option><option value="MY">🇲🇾 Malaysia</option><option value="NL">🇳🇱 Netherlands</option><option value="NO">🇳🇴 Norway</option><option value="PH">🇵🇭 Philippines</option><option value="PL">🇵🇱 Poland</option><option value="PT">🇵🇹 Portugal</option><option value="RU">🇷🇺 Russia</option><option value="SE">🇸🇪 Sweden</option><option value="SG">🇸🇬 Singapore</option><option value="TH">🇹🇭 Thailand</option><option value="TR">🇹🇷 Turkey</option><option value="US">🇺🇸 United States</option><option value="VN">🇻🇳 Vietnam</option></select></div>
+                            <div class="input-group"><input type="number" step="0.01" name="cogs_2" min="0.01" placeholder="0.00"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="export_fees_2" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="delivery_port_2" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="intl_freight_2" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="mpf_hmf_2" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="brokerage_2" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="final_delivery_2" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="other_2" min="0" placeholder="0.00" value="0"></div>
+                            <div class="vendor-results-container"></div>
+                        </div>
+                        <div class="vendor-col" data-vendor-id="3">
+                            <div class="input-group"><select name="vendor_country_3"><option value="">Select</option><option value="AT">🇦🇹 Austria</option><option value="AU">🇦🇺 Australia</option><option value="BE">🇧🇪 Belgium</option><option value="BR">🇧🇷 Brazil</option><option value="CA">🇨🇦 Canada</option><option value="CN">🇨🇳 China</option><option value="CZ">🇨🇿 Czech Republic</option><option value="DE">🇩🇪 Germany</option><option value="DK">🇩🇰 Denmark</option><option value="ES">🇪🇸 Spain</option><option value="FI">🇫🇮 Finland</option><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option><option value="GR">🇬🇷 Greece</option><option value="HK">🇭🇰 Hong Kong</option><option value="ID">🇮🇩 Indonesia</option><option value="IE">🇮🇪 Ireland</option><option value="IN">🇮🇳 India</option><option value="IT">🇮🇹 Italy</option><option value="JP">🇯🇵 Japan</option><option value="KR">🇰🇷 South Korea</option><option value="MX">🇲🇽 Mexico</option><option value="MY">🇲🇾 Malaysia</option><option value="NL">🇳🇱 Netherlands</option><option value="NO">🇳🇴 Norway</option><option value="PH">🇵🇭 Philippines</option><option value="PL">🇵🇱 Poland</option><option value="PT">🇵🇹 Portugal</option><option value="RU">🇷🇺 Russia</option><option value="SE">🇸🇪 Sweden</option><option value="SG">🇸🇬 Singapore</option><option value="TH">🇹🇭 Thailand</option><option value="TR">🇹🇷 Turkey</option><option value="US">🇺🇸 United States</option><option value="VN">🇻🇳 Vietnam</option></select></div>
+                            <div class="input-group"><input type="number" step="0.01" name="cogs_3" min="0.01" placeholder="0.00"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="export_fees_3" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="delivery_port_3" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="intl_freight_3" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="mpf_hmf_3" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="brokerage_3" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="final_delivery_3" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="other_3" min="0" placeholder="0.00" value="0"></div>
+                            <div class="vendor-results-container"></div>
+                        </div>
+                        <div class="vendor-col" data-vendor-id="4">
+                            <div class="input-group"><select name="vendor_country_4"><option value="">Select</option><option value="AT">🇦🇹 Austria</option><option value="AU">🇦🇺 Australia</option><option value="BE">🇧🇪 Belgium</option><option value="BR">🇧🇷 Brazil</option><option value="CA">🇨🇦 Canada</option><option value="CN">🇨🇳 China</option><option value="CZ">🇨🇿 Czech Republic</option><option value="DE">🇩🇪 Germany</option><option value="DK">🇩🇰 Denmark</option><option value="ES">🇪🇸 Spain</option><option value="FI">🇫🇮 Finland</option><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option><option value="GR">🇬🇷 Greece</option><option value="HK">🇭🇰 Hong Kong</option><option value="ID">🇮🇩 Indonesia</option><option value="IE">🇮🇪 Ireland</option><option value="IN">🇮🇳 India</option><option value="IT">🇮🇹 Italy</option><option value="JP">🇯🇵 Japan</option><option value="KR">🇰🇷 South Korea</option><option value="MX">🇲🇽 Mexico</option><option value="MY">🇲🇾 Malaysia</option><option value="NL">🇳🇱 Netherlands</option><option value="NO">🇳🇴 Norway</option><option value="PH">🇵🇭 Philippines</option><option value="PL">🇵🇱 Poland</option><option value="PT">🇵🇹 Portugal</option><option value="RU">🇷🇺 Russia</option><option value="SE">🇸🇪 Sweden</option><option value="SG">🇸🇬 Singapore</option><option value="TH">🇹🇭 Thailand</option><option value="TR">🇹🇷 Turkey</option><option value="US">🇺🇸 United States</option><option value="VN">🇻🇳 Vietnam</option></select></div>
+                            <div class="input-group"><input type="number" step="0.01" name="cogs_4" min="0.01" placeholder="0.00"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="export_fees_4" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="delivery_port_4" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="intl_freight_4" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="mpf_hmf_4" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="brokerage_4" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="final_delivery_4" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="other_4" min="0" placeholder="0.00" value="0"></div>
+                            <div class="vendor-results-container"></div>
+                        </div>
+                        <div class="vendor-col" data-vendor-id="5">
+                            <div class="input-group"><select name="vendor_country_5"><option value="">Select</option><option value="AT">🇦🇹 Austria</option><option value="AU">🇦🇺 Australia</option><option value="BE">🇧🇪 Belgium</option><option value="BR">🇧🇷 Brazil</option><option value="CA">🇨🇦 Canada</option><option value="CN">🇨🇳 China</option><option value="CZ">🇨🇿 Czech Republic</option><option value="DE">🇩🇪 Germany</option><option value="DK">🇩🇰 Denmark</option><option value="ES">🇪🇸 Spain</option><option value="FI">🇫🇮 Finland</option><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option><option value="GR">🇬🇷 Greece</option><option value="HK">🇭🇰 Hong Kong</option><option value="ID">🇮🇩 Indonesia</option><option value="IE">🇮🇪 Ireland</option><option value="IN">🇮🇳 India</option><option value="IT">🇮🇹 Italy</option><option value="JP">🇯🇵 Japan</option><option value="KR">🇰🇷 South Korea</option><option value="MX">🇲🇽 Mexico</option><option value="MY">🇲🇾 Malaysia</option><option value="NL">🇳🇱 Netherlands</option><option value="NO">🇳🇴 Norway</option><option value="PH">🇵🇭 Philippines</option><option value="PL">🇵🇱 Poland</option><option value="PT">🇵🇹 Portugal</option><option value="RU">🇷🇺 Russia</option><option value="SE">🇸🇪 Sweden</option><option value="SG">🇸🇬 Singapore</option><option value="TH">🇹🇭 Thailand</option><option value="TR">🇹🇷 Turkey</option><option value="US">🇺🇸 United States</option><option value="VN">🇻🇳 Vietnam</option></select></div>
+                            <div class="input-group"><input type="number" step="0.01" name="cogs_5" min="0.01" placeholder="0.00"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="export_fees_5" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="delivery_port_5" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="intl_freight_5" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="mpf_hmf_5" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="brokerage_5" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="final_delivery_5" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="other_5" min="0" placeholder="0.00" value="0"></div>
+                            <div class="vendor-results-container"></div>
+                        </div>
+                        <div class="vendor-col" data-vendor-id="6">
+                            <div class="input-group"><select name="vendor_country_6"><option value="">Select</option><option value="AT">🇦🇹 Austria</option><option value="AU">🇦🇺 Australia</option><option value="BE">🇧🇪 Belgium</option><option value="BR">🇧🇷 Brazil</option><option value="CA">🇨🇦 Canada</option><option value="CN">🇨🇳 China</option><option value="CZ">🇨🇿 Czech Republic</option><option value="DE">🇩🇪 Germany</option><option value="DK">🇩🇰 Denmark</option><option value="ES">🇪🇸 Spain</option><option value="FI">🇫🇮 Finland</option><option value="FR">🇫🇷 France</option><option value="GB">🇬🇧 United Kingdom</option><option value="GR">🇬🇷 Greece</option><option value="HK">🇭🇰 Hong Kong</option><option value="ID">🇮🇩 Indonesia</option><option value="IE">🇮🇪 Ireland</option><option value="IN">🇮🇳 India</option><option value="IT">🇮🇹 Italy</option><option value="JP">🇯🇵 Japan</option><option value="KR">🇰🇷 South Korea</option><option value="MX">🇲🇽 Mexico</option><option value="MY">🇲🇾 Malaysia</option><option value="NL">🇳🇱 Netherlands</option><option value="NO">🇳🇴 Norway</option><option value="PH">🇵🇭 Philippines</option><option value="PL">🇵🇱 Poland</option><option value="PT">🇵🇹 Portugal</option><option value="RU">🇷🇺 Russia</option><option value="SE">🇸🇪 Sweden</option><option value="SG">🇸🇬 Singapore</option><option value="TH">🇹🇭 Thailand</option><option value="TR">🇹🇷 Turkey</option><option value="US">🇺🇸 United States</option><option value="VN">🇻🇳 Vietnam</option></select></div>
+                            <div class="input-group"><input type="number" step="0.01" name="cogs_6" min="0.01" placeholder="0.00"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="export_fees_6" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="delivery_port_6" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="intl_freight_6" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="mpf_hmf_6" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="brokerage_6" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="final_delivery_6" min="0" placeholder="0.00" value="0"></div>
+                            <div class="input-group"><input type="number" step="0.01" name="other_6" min="0" placeholder="0.00" value="0"></div>
+                            <div class="vendor-results-container"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button type="button" class="debug-btn" onclick="window.location.href='/'">← Back to Tariff Modeling</button>
+                    <button type="submit" id="run-btn" class="run-btn" disabled>Calculate Landed Cost</button>
+                    <button type="button" class="save-btn" onclick="exportToExcel()">Save Results</button>
+                </div>
+            </form>
+        </div>
+        <div class="footer">© Avalara, Inc. 2025</div>
+    </div>
+
+    <!-- Classification Widget Script -->
+
+    <script
+        id="ccce-script"
+        data-element-id="widget-container"
+        src="https://hscode-self-classify.sbx.avalara.com/embed.js"
+        runOnload="false">
+    </script>
+
+    <script>
+// Wait for widget script to load
+let ccceReady = false;
+const checkCCCE = setInterval(() => {
+    if (typeof ccce !== 'undefined') {
+        ccceReady = true;
+        clearInterval(checkCCCE);
+        console.log('✓ Classification widget loaded successfully');
+    }
+}, 100);
+
+// Classification widget integration - matches working test page pattern
+document.getElementById('classifyBtn').addEventListener('click', function() {
+    console.log('>>> Classify button clicked');
+
+    const description = document.getElementById('description').value.trim();
+    if (!description) {
+        alert('Please enter a product description first');
+        return;
+    }
+
+    if (!ccceReady || typeof ccce === 'undefined') {
+        console.error('❌ Widget not ready');
+        alert('Classification widget is still loading. Please wait a moment and try again.');
+        return;
+    }
+
+    // Get destination and origin countries
+    const destination = document.querySelector('select[name="import_country"]').value;
+
+    // Try to get origin from first vendor with a country selected, default to US
+    let origin = 'US';
+    for (let i = 1; i <= 6; i++) {
+        const vendorCountry = document.querySelector(`select[name="vendor_country_${i}"]`);
+        if (vendorCountry && vendorCountry.value) {
+            origin = vendorCountry.value;
+            break;
+        }
+    }
+
+    console.log('📋 Parameters:', {
+        destination: destination,
+        origin: origin,
+        description: description
+    });
+
+    // Show widget container
+    const widgetContainer = document.getElementById('classification-widget');
+    widgetContainer.style.display = 'block';
+    setTimeout(() => {
+        widgetContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+
+    // Get script element
+    const script = document.getElementById('ccce-script');
+
+    // Set script attributes dynamically (like test page does)
+    console.log('🔧 Setting script attributes...');
+    script.setAttribute('env', 'sbx');
+    script.setAttribute('data-profile-id', '2007305446');
+    script.setAttribute('cip', ''); // CIP as bare attribute for sbx environment
+
+    // Clear any old optional attributes
+    const optionalAttrs = ['debug', 'verbose', 'forceTheme', 'no-shadow'];
+    optionalAttrs.forEach(attr => script.removeAttribute(attr));
+
+    // Reset component before reinitializing (like test page does)
+    console.log('🔄 Resetting component...');
+    if (ccce._loaded) {
+        ccce._loaded = false;
+        ccce._unload();
+    }
+
+    // Initialize widget
+    try {
+        console.log('⚙️  Initializing CCCE widget...');
+        ccce.init(script);
+
+        // Classification parameters (matching test page structure)
+        const params = {
+            product: description,
+            destination: destination,
+            origin: origin,
+            lang: 'English',
+            avaTaxId: '2007305446',
+            avaCustomerId: '00000',
+            hs6: false,              // Don't limit to HS6 only
+            useKeyboard: false,
+            useLinkOut: false,
+            useTypeform: true,       // Use typeform interface
+            hideTheme: false,
+            hideClose: false
+        };
+
+        console.log('🚀 Starting classification with params:', JSON.stringify(params, null, 2));
+
+        // Start classification
+        ccce.classify(
+            params,
+            // Success callback
+            function(data) {
+                console.log('✅ Classification Success:', data);
+                if (data && data.hsCode) {
+                    document.getElementById('hs_code').value = data.hsCode;
+                    document.getElementById('hs_code').style.backgroundColor = '#d1fae5';
+                    document.getElementById('hs_code').style.borderColor = '#10b981';
+                    console.log('✓ HS Code set to:', data.hsCode);
+                } else {
+                    console.warn('⚠️  No HS code in response:', data);
+                }
+                widgetContainer.style.display = 'none';
+            },
+            // Error/abort callback
+            function(err) {
+                console.warn('⚠️  Classification Aborted or Error:', err);
+                widgetContainer.style.display = 'none';
+            }
+        );
+    } catch(e) {
+        console.error('❌ Widget initialization error:', e);
+        console.error('Stack trace:', e.stack);
+        alert('Error initializing classification widget: ' + e.message);
+        widgetContainer.style.display = 'none';
+    }
+});
+
+// Close widget button
+document.getElementById('closeWidget').addEventListener('click', function() {
+    document.getElementById('classification-widget').style.display = 'none';
+});
+    </script>
+    <script>
+document.addEventListener('DOMContentLoaded',function(){
+    const i=document.getElementById('import_date');
+    const params=new URLSearchParams(window.location.search);
+
+    if(params.has('date')){
+        i.value=params.get('date');
+        document.querySelector('select[name="import_country"]').value=params.get('country')||'US';
+        document.querySelector('input[name="part_sku"]').value=params.get('sku')||'';
+        document.querySelector('input[name="description"]').value=params.get('description')||'';
+        document.querySelector('input[name="hs_code"]').value=params.get('hsCode')||'';
+        document.querySelector('input[name="order_qty"]').value=params.get('qty')||'';
+
+        if(params.has('vendors')){
+            try{
+                const vendors=JSON.parse(params.get('vendors'));
+                vendors.forEach((v,idx)=>{
+                    if(idx<6){
+                        const vendorId=idx+1;
+                        document.querySelector(`select[name="vendor_country_${vendorId}"]`).value=v.country;
+                        document.querySelector(`input[name="cogs_${vendorId}"]`).value=v.cogs;
+                    }
+                });
+            }catch(e){console.error('Error parsing vendors',e);}
+        }
+        validateForm();
+    }else if(!i.value){
+        const t=new Date();
+        i.value=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+    }
+});
+
+
+
+function validateForm(event){if(event)event.preventDefault();const hs=document.getElementById('hs_code').value;if(!hs){document.getElementById('run-btn').disabled=true;return false}const vendors=document.querySelectorAll('.vendor-col');let hasValid=false;vendors.forEach(v=>{const id=v.dataset.vendorId;const country=v.querySelector(`select[name="vendor_country_${id}"]`).value;const cogs=v.querySelector(`input[name="cogs_${id}"]`).value;if(country&&cogs&&parseFloat(cogs)>0)hasValid=true});document.getElementById('run-btn').disabled=!hasValid;return hasValid}
+
+document.getElementById('mainForm').addEventListener('input',validateForm);
+document.getElementById('mainForm').addEventListener('change',validateForm);
+
+document.getElementById('mainForm').addEventListener('submit',async function(event){
+    event.preventDefault();
+    if(!validateForm())return;
+    const formData=new FormData(this);
+    const vendors=document.querySelectorAll('.vendor-col');
+
+    for(let i=0;i<vendors.length;i++){
+        const vendor=vendors[i];
+        const vendorId=vendor.dataset.vendorId;
+        const country=vendor.querySelector(`select[name="vendor_country_${vendorId}"]`).value;
+        const cogs=parseFloat(vendor.querySelector(`input[name="cogs_${vendorId}"]`).value)||0;
+        const exportFees=parseFloat(vendor.querySelector(`input[name="export_fees_${vendorId}"]`).value)||0;
+        const deliveryPort=parseFloat(vendor.querySelector(`input[name="delivery_port_${vendorId}"]`).value)||0;
+        const intlFreight=parseFloat(vendor.querySelector(`input[name="intl_freight_${vendorId}"]`).value)||0;
+        const mpfHmf=parseFloat(vendor.querySelector(`input[name="mpf_hmf_${vendorId}"]`).value)||0;
+        const brokerage=parseFloat(vendor.querySelector(`input[name="brokerage_${vendorId}"]`).value)||0;
+        const finalDelivery=parseFloat(vendor.querySelector(`input[name="final_delivery_${vendorId}"]`).value)||0;
+        const other=parseFloat(vendor.querySelector(`input[name="other_${vendorId}"]`).value)||0;
+
+        const resultsContainer=vendor.querySelector('.vendor-results-container');
+        resultsContainer.innerHTML='';
+
+        if(country&&cogs>0){
+            resultsContainer.innerHTML='<div class="loading">Calculating...</div>';
+
+            try{
+                const totalShipping=exportFees+deliveryPort+intlFreight+mpfHmf+brokerage+finalDelivery+other;
+
+                const response=await fetch('/calculate_landed_cost',{
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body:JSON.stringify({
+                        description:formData.get('description'),
+                        hs_code:formData.get('hs_code'),
+                        vendor_country:country,
+                        cogs:cogs,
+                        quantity:parseInt(formData.get('order_qty')),
+                        import_country:formData.get('import_country'),
+                        import_date:formData.get('import_date'),
+                        shipping:totalShipping
+                    })
+                });
+
+                const result=await response.json();
+                resultsContainer.innerHTML='';
+
+                if(result.success){
+                    updateResultLabels();
+
+                    const tariffDiv=document.createElement('div');
+                    tariffDiv.className='result-field';
+                    tariffDiv.innerHTML=`<span>${result.total_duty_rate}</span>`;
+                    resultsContainer.appendChild(tariffDiv);
+
+                    const dutyDiv=document.createElement('div');
+                    dutyDiv.className='result-field';
+                    dutyDiv.innerHTML=`<span>$${result.total_duty_tax.toFixed(2)}</span>`;
+                    resultsContainer.appendChild(dutyDiv);
+
+                    const shippingDiv=document.createElement('div');
+                    shippingDiv.className='result-field';
+                    shippingDiv.innerHTML=`<span>$${totalShipping.toFixed(2)}</span>`;
+                    resultsContainer.appendChild(shippingDiv);
+
+                    const totalCost=(cogs*parseInt(formData.get('order_qty')))+result.total_duty_tax+totalShipping;
+                    vendor.dataset.totalCost=totalCost;
+
+                    const totalDiv=document.createElement('div');
+                    totalDiv.className='result-field total-cost-result';
+                    totalDiv.innerHTML=`<span><strong>$${totalCost.toFixed(2)}</strong></span>`;
+                    resultsContainer.appendChild(totalDiv);
+                }else{
+                    resultsContainer.innerHTML='<div class="error">Calculation failed</div>';
+                }
+            }catch(error){
+                resultsContainer.innerHTML='<div class="error">Calculation failed</div>';
+            }
+        }
+    }
+    applyColorCoding();
+});
+
+function updateResultLabels(){
+    const labelsContainer=document.querySelector('.result-labels-container');
+    if(labelsContainer.children.length>0)return;
+
+    const labels=['Total Tariff Rate','Total Import Duties/Tax','Total Shipping Costs & Fees','Total Cost'];
+    labels.forEach((label,idx)=>{
+        const labelDiv=document.createElement('div');
+        labelDiv.className='input-group'+(idx===labels.length-1?' total-cost-label':'');
+        labelDiv.innerHTML=`<label><strong>${label}</strong></label>`;
+        labelsContainer.appendChild(labelDiv);
+    });
+}
+
+function applyColorCoding(){
+    const vendors=document.querySelectorAll('.vendor-col');
+    const vendorCosts=[];
+
+    vendors.forEach(vendor=>{
+        if(vendor.dataset.totalCost){
+            vendorCosts.push({vendor:vendor,totalCost:parseFloat(vendor.dataset.totalCost)});
+        }
+    });
+
+    if(vendorCosts.length===0)return;
+
+    vendorCosts.sort((a,b)=>a.totalCost-b.totalCost);
+    const minCost=vendorCosts[0].totalCost;
+    const maxCost=vendorCosts[vendorCosts.length-1].totalCost;
+
+    vendors.forEach(v=>v.classList.remove('cheapest-vendor'));
+    vendorCosts[0].vendor.classList.add('cheapest-vendor');
+
+    vendorCosts.forEach(({vendor,totalCost})=>{
+        const totalCostDiv=vendor.querySelector('.total-cost-result');
+        if(totalCostDiv){
+            const ratio=vendorCosts.length===1?0:(totalCost-minCost)/(maxCost-minCost);
+            const r=Math.round(255*ratio);
+            const g=Math.round(255*(1-ratio));
+            const color=`rgb(${r},${g},0)`;
+            const brightness=(r*299+g*587)/1000;
+            const textColor=brightness>128?'#000000':'#ffffff';
+            totalCostDiv.style.backgroundColor=color;
+            totalCostDiv.style.color=textColor;
+            totalCostDiv.style.borderColor=color;
+        }
+    });
+}
+
+function exportToExcel(){alert('Excel export coming soon!');}
+validateForm();
+    </script>
+</body>
+</html>
