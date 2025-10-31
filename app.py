@@ -169,7 +169,7 @@ def call_global_compliance_api(hs_code, coo, vendor_country, cost_per_unit, quan
             "transactionDate": import_date,
             "currency": "usd",
             "sellerCode": "SELLER-001",
-            "b2b": True,
+            "b2b": False,
             "shipFrom": {
                 "country": vendor_country
             },
